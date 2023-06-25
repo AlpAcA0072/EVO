@@ -1,5 +1,5 @@
 from operator import mod
-from database.database.nasbenchbase.models import NASBenchResult
+from database.nasbenchbase.models import NASBenchResult
 from django.db import models
 
 class NASBench101Result(NASBenchResult):
