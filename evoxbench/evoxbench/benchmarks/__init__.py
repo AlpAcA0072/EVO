@@ -9,4 +9,4 @@ from .nats import *
 from .mnv3 import *
 from .resnet import *
 from .transformer import *
-from mosegnas import *
+from .mosegnas import * 

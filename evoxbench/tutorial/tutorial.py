@@ -2,15 +2,16 @@ from IPython.core.display import display, HTML
 display(HTML("<style>.container { width:100% !important; }</style>"))
 
 import sys
-sys.path.append(r"D:\evo\evoxbench")
-sys.path.append(r"D:\evo\database")
-sys.path.append(r"D:\evo\data")
-sys.path.append(r"D:\evo\nasbench")
+sys.path.append(r"F:\EVO\evoxbench")
+sys.path.append(r"F:\EVO\database")
+sys.path.append(r"F:\EVO\data")
+sys.path.append(r"F:\EVO\nasbench")
+sys.path.append(r"F:\EVO\evoxbench\evoxbench\database\ORM")
 # print(sys.path)
 
 print('Configurating EvoXBench...')
 from evoxbench.database.init import config
-config("D:\evo\database\database", "D:\evo\data\data")
+config("F:\EVO\database\database", "F:\EVO\data\data")
 
 
 # NAS-Bench-101 search space
