@@ -1,20 +1,17 @@
-import copy
-import json
-import hashlib
-import itertools
 import os
 import random
 from collections import OrderedDict
 from pathlib import Path
 import numpy as np
-from numpy import ndarray
-from typing import Callable, Sequence, cast, List, AnyStr, Any, Tuple, Union, Set
 
-from evoxbench.modules import SearchSpace, Evaluator, Benchmark,SurrogateModel
-from evoxbench.modules.evaluator import Evaluator
-from evoxbench.modules.search_space import SearchSpace
+# sys.path.append("..")
+# from ..modules.evaluator import *
+# from ..modules.evaluator import Evaluator
+# from evoxbench.evoxbench.modules import SearchSpace, Evaluator, Benchmark,SurrogateModel
+# from ..modules.evaluator import Evaluator
+# from ..modules.search_space import SearchSpace
 
-__all__ = ['MoSegNASSearchSpace', 'MoSegNASEvaluator', 'MoSegNASBenchmark']
+__all__ = ['MoSegNASSearchSpace', 'MoSegNASEvaluator', 'MoSegNASBenchmark', 'MoSegNASSurrogateModel']
 
 # HASH = {'conv1x1-compression': 0, 'conv3x3': 1, 'conv1x1-expansion': 2}
 
@@ -22,8 +19,9 @@ def get_path(name):
     return str(Path(os.environ.get("EVOXBENCH_MODEL", os.getcwd())) / "moseg" / name)
 
 class MoSegNASSearchSpace(SearchSpace):
-    def __init__(self, **kwargs):
+    def __init__(self, subnet_str=True, **kwargs):
         super().__init__(**kwargs)
+        self.subnet_str = subnet_str
 
         #number of MAX layers of each stage:
         # TODO [2, 2, 3, 4, 2] ?
@@ -40,9 +38,9 @@ class MoSegNASSearchSpace(SearchSpace):
     def name(self):
         return 'MoSegNASSearchSpace'
 
-    def _sample(self, subnet_str=True):
+    def _sample(self):
         x = np.array([random.choice(options) for options in self.categories])
-        if subnet_str:
+        if self.subnet_str:
             return self._decode(x)
         else:
             return x
@@ -56,15 +54,16 @@ class MoSegNASSearchSpace(SearchSpace):
         return {'d': x[:4].tolist(), 'e': e, 'w': x[-5:].tolist()}
     
     def visualize(self):
+        """ method to visualize an architecture """
         raise NotImplementedError
-
+    
 class MoSegNASEvaluator(Evaluator):
     def __init__(self, objs='err&params', **kwargs):
         super().__init__(objs, **kwargs)
         
     @property
     def name(self):
-        return 'MoSegNASEvaluator'
+        return self.__class__.__name__
     
     def evaluate(self, archs, **kwargs):
         pass
@@ -88,7 +87,7 @@ class MoSegNASBenchmark(Benchmark):
         print(X)
         print(F)
  
-class MoSegSurrogateModel(SurrogateModel):
+class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self, **kwargs):
         pass
 
@@ -103,3 +102,7 @@ class MoSegSurrogateModel(SurrogateModel):
     def predict(self, features, **kwargs):
         """ method to predict performance from architecture features """
         raise NotImplementedError
+
+
+MoSegNASEvaluator = MoSegNASEvaluator()
+print(MoSegNASEvaluator.name())
