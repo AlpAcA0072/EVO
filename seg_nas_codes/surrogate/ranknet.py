@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 
-from surrogate.utils import get_correlation
+from seg_nas_codes.surrogate.utils import get_correlation
 
 _DEBUG = False
 
@@ -310,13 +310,14 @@ def predict(net, query, device):
 
 if __name__ == '__main__':
     import json
-    from search.search_space import BasicSearchSpace
+    from seg_nas_codes.search.search_space import BasicSearchSpace
     from lightgbm import LGBMRegressor
 
     # define the search space
     search_space = BasicSearchSpace()
 
-    meta_data = json.load(open("../data/ofa_fanet_plus_basic_rtx_fps@0.5.json", "r"))
+    # meta_data = json.load(open("../data/ofa_fanet_plus_basic_rtx_fps@0.5.json", "r"))
+    meta_data = json.load(open("f:/EVO/seg_nas_codes/data/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json", "r"))
     subnet_str = [d['config'] for d in meta_data]
     features = search_space.features(search_space.encode(subnet_str))
     # targets = np.array([d['mIoU'] for d in meta_data])

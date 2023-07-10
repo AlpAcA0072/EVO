@@ -99,7 +99,8 @@ class BasicSearchSpace(OFAFANetSearchSpace):
         # {'d': [1, 3, 0, 1],
         # 'e': [0.8, 0.65, 0.8, 0.8, 1.0, 0.65, 1.0, 0.65, 0.8, 1.0, 0.8, 0.65, 0.8, 1.0, 1.0, 0.65],
         # 'w': [2, 2, 2, 0, 0]}
-        # both 'd' and 'w' indicate choice index already, we just need to encode 'e'
+        # both 'd' and 'w' indicate choice index already, we just need to encode 'e''
+        # self.expand_ratio_list = [0.2, 0.25, 0.35]
         e = [np.where(_e == np.array(self.expand_ratio_list))[0][0] for _e in subnet_str['e']]
         return subnet_str['d'] + e + subnet_str['w']
 
