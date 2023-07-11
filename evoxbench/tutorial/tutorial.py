@@ -15,9 +15,10 @@ config("F:\EVO\database\database", "F:\EVO\data\data")
 
 
 # NAS-Bench-101 search space
-from evoxbench.benchmarks import NASBench101Benchmark
+from evoxbench.benchmarks import NASBench101Benchmark, NASBench101Evaluator
 objs = 'err&params'  # ['err&params', 'err&flops', 'err&params&flops']
 benchmark = NASBench101Benchmark(objs=objs, normalized_objectives=False)
+evaluator =  NASBench101Evaluator()
 print("Benchmaking on NB101 search space with objectives: {}".format(objs))
 
 # # NAS-Bench-201 search space
@@ -42,7 +43,7 @@ print("Benchmaking on NB101 search space with objectives: {}".format(objs))
 # print("Benchmaking on DARTS search space with objectives: {}".format(objs))
 
 # let's randomly create N architectures
-N = 1
+N = 10
 archs = benchmark.search_space.sample(N)
 print('Randomly create {} architectures:'.format(N))
 print(archs)
@@ -51,3 +52,7 @@ print(archs)
 X = benchmark.search_space.encode(archs)
 print('Encode architectures to decision variables X: ')
 print(X)
+
+decoded_X = benchmark.search_space.decode(X)
+results = evaluator.evaluate(archs=decoded_X,true_eval=True)
+print(results)

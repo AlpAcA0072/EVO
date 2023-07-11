@@ -1,15 +1,12 @@
 import os
 import random
+# import torch
 from collections import OrderedDict
 from pathlib import Path
 import numpy as np
 
-# sys.path.append("..")
-# from ..modules.evaluator import *
-# from ..modules.evaluator import Evaluator
-# from evoxbench.evoxbench.modules import SearchSpace, Evaluator, Benchmark,SurrogateModel
-# from ..modules.evaluator import Evaluator
-# from ..modules.search_space import SearchSpace
+from evoxbench.modules import SearchSpace, Evaluator, Benchmark, surrogate_model
+from nasbench101.models import MoSegNASResult  # has to be imported after the init method
 
 __all__ = ['MoSegNASSearchSpace', 'MoSegNASEvaluator', 'MoSegNASBenchmark', 'MoSegNASSurrogateModel']
 
@@ -58,15 +55,28 @@ class MoSegNASSearchSpace(SearchSpace):
         raise NotImplementedError
     
 class MoSegNASEvaluator(Evaluator):
-    def __init__(self, objs='err&params', **kwargs):
-        super().__init__(objs, **kwargs)
+    def __init__(self,
+                 input_size=(1, 3, 512, 1024),
+                  **kwargs):
+        super().__init__(**kwargs)
+        self.input_size= input_size
         
     @property
     def name(self):
-        return self.__class__.__name__
+        return 'MoSegNASEvaluator'
     
-    def evaluate(self, archs, **kwargs):
-        pass
+    def evaluate(self, 
+                 archs, # archs = subnets
+                 true_eval = False, # true_eval = if evaluate based on data or true inference result
+                 objs='params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
+                 **kwargs):
+        
+        dummy_data = torch.rand(*self.input_size)
+
+        batch_mIoU, batch_params, batch_flops, batch_latency, batch_FPS = [], [], [], [], []
+        for index, subnet_encoded in enumerate(archs):
+            print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
+            
 
 class MoSegNASBenchmark(Benchmark):
     def __init__(self, normalized_objectives=False, **kwargs):
@@ -102,7 +112,3 @@ class MoSegNASSurrogateModel(SurrogateModel):
     def predict(self, features, **kwargs):
         """ method to predict performance from architecture features """
         raise NotImplementedError
-
-
-MoSegNASEvaluator = MoSegNASEvaluator()
-print(MoSegNASEvaluator.name())
