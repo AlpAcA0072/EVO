@@ -5,8 +5,8 @@ from collections import OrderedDict
 from pathlib import Path
 import numpy as np
 
-from evoxbench.modules import SearchSpace, Evaluator, Benchmark, surrogate_model
-from nasbench101.models import MoSegNASResult  # has to be imported after the init method
+from evoxbench.modules import SearchSpace, Evaluator, Benchmark, SurrogateModel
+# from mosegnas.models import MoSegNASResult  # has to be imported after the init method
 
 __all__ = ['MoSegNASSearchSpace', 'MoSegNASEvaluator', 'MoSegNASBenchmark', 'MoSegNASSurrogateModel']
 
