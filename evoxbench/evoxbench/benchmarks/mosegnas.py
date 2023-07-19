@@ -102,8 +102,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
         pass
 
     def name(self):
-        """ name of the surrogate model """
-        raise NotImplementedError
+        return 'MoSegNASSurrogateModel'
 
     def fit(self, X, **kwargs):
         """ method to fit/learn/train a surrogate model from data """

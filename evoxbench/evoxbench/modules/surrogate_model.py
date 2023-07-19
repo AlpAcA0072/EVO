@@ -34,6 +34,7 @@ class MLPPredictor(SurrogateModel):
         super().__init__()
 
         # weights = json.load(open(pretrained, 'r'))
+        # pretrained surrogate_model's weight, be used to inference or predict
         checkpoints = json.load(open(pretrained, 'r'))
 
         weights = checkpoints['state_dicts']
