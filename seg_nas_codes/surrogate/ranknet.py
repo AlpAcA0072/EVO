@@ -333,7 +333,7 @@ if __name__ == '__main__':
     test_preds, lgb_test_preds = 0, 0
     # state_dicts = []
     # state_dicts = torch.load('../surrogate/ranknet_mIoU.pth', map_location='cpu')
-    state_dicts = torch.load('../surrogate/ranknet_latency.pth', map_location='cpu')
+    # state_dicts = torch.load('../surrogate/ranknet_latency.pth', map_location='cpu')
 
     for i, test_split in enumerate(np.array_split(perm, 10)):
 
@@ -341,8 +341,11 @@ if __name__ == '__main__':
 
         # ranknet
         predictor = RankNet(loss='rank', epochs=300, device='cpu')
-        predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
-        # predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+
+        # no pretrained model
+        # predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
+        predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+        
         pred = predictor.predict(train_inputs[test_split, :])
         rmse, r, rho, tau = get_correlation(pred, train_targets[test_split])
         print("Fold {} RankNet: rmse = {:.4f}, pearson = {:.4f}, spearman = {:.4f}, kendall = {:.4f}".format(

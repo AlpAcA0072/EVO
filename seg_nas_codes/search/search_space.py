@@ -69,7 +69,8 @@ class BasicSearchSpace(OFAFANetSearchSpace):
         super().__init__(**kwargs)
 
         self.depth_list = [2, 3, 4, 2]
-        self.expand_ratio_list = [0.65, 0.8, 1.0]
+        self.expand_ratio_list = [0.2, 0.25, 0.35]
+        # self.expand_ratio_list = [0.65, 0.8, 1.0]
         self.width_mult_list = [0.65, 0.8, 1.0]
         self.feature_encoding = feature_encoding
 
@@ -119,7 +120,8 @@ class BasicSearchSpace(OFAFANetSearchSpace):
             # in case the feature encoder is not initialized
             if self.feature_encoding == 'one-hot':
                 from sklearn.preprocessing import OneHotEncoder
-                self.feat_enc = OneHotEncoder(categories=self.categories).fit(X)
+                encoder = OneHotEncoder(categories=self.categories)
+                self.feat_enc = encoder.fit(X)
             else:
                 raise NotImplementedError
 

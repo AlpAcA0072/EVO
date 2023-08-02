@@ -1,5 +1,6 @@
 import os
 import random
+import json
 # import torch
 from collections import OrderedDict
 from pathlib import Path
@@ -52,31 +53,7 @@ class MoSegNASSearchSpace(SearchSpace):
     
     def visualize(self):
         """ method to visualize an architecture """
-        raise NotImplementedError
-    
-class MoSegNASEvaluator(Evaluator):
-    def __init__(self,
-                 input_size=(1, 3, 512, 1024),
-                  **kwargs):
-        super().__init__(**kwargs)
-        self.input_size= input_size
-        
-    @property
-    def name(self):
-        return 'MoSegNASEvaluator'
-    
-    def evaluate(self, 
-                 archs, # archs = subnets
-                 true_eval = False, # true_eval = if evaluate based on data or true inference result
-                 objs='params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
-                 **kwargs):
-        
-        dummy_data = torch.rand(*self.input_size)
-
-        batch_mIoU, batch_params, batch_flops, batch_latency, batch_FPS = [], [], [], [], []
-        for index, subnet_encoded in enumerate(archs):
-            print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
-            
+        raise NotImplementedError            
 
 class MoSegNASBenchmark(Benchmark):
     def __init__(self, normalized_objectives=False, **kwargs):
@@ -96,18 +73,77 @@ class MoSegNASBenchmark(Benchmark):
         print(archs)
         print(X)
         print(F)
+
+class MoSegNASEvaluator(Evaluator):
+    def __init__(self,
+                 pretrained,
+                 input_size=(1, 3, 512, 1024),
+                  **kwargs):
+        super().__init__(**kwargs)
+        self.input_size= input_size
+        self.pretrained = pretrained
+
+        self.feature_encoder = MoSegNASSearchSpace()
+        self.surrogate_model = MoSegNASSurrogateModel(pretrained=self.pretrained)
+        
+    @property
+    def name(self):
+        return 'MoSegNASEvaluator'
+    
+    def evaluate(self, 
+                 archs, # archs = subnets
+                 true_eval = False, # true_eval = if evaluate based on data or true inference result
+                 objs='err&params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
+                 **kwargs):
+    
+        batch_stats = []
+
+        for index, subnet_encoded in enumerate(archs):
+            print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
+
+            accs = self.surrogate_model.fit(subnet_encoded, true_eval = true_eval)
+            stats = {}
+            # objs='err&params&flops&latency&FPS&mIoU'
+            if 'err' in objs:
+               stats['err'] = 1 - accs
+            if 'params' in objs:
+                stats['err'] = params
+            if 'flops' in objs:
+                stats['err'] = flops
+            if 'latency' in objs:
+                stats['err'] = latency
+            if 'FPS' in objs:
+                stats['err'] = FPS
+            if 'mIoU' in objs:
+                stats['err'] = mIoU
+            batch_stats.append(stats)
+            
+        return batch_stats
+
+
  
 class MoSegNASSurrogateModel(SurrogateModel):
-    def __init__(self, **kwargs):
-        pass
+    def __init__(self, 
+                 pretrained, 
+                 **kwargs):
+       super().__init__()
+       self.pretrain_model = json.load(open(pretrained, 'r'))
 
     def name(self):
         return 'MoSegNASSurrogateModel'
 
     def fit(self, X, **kwargs):
-        """ method to fit/learn/train a surrogate model from data """
+        """ method to perform forward in a surrogate model from data """
         raise NotImplementedError
 
-    def predict(self, features, **kwargs):
-        """ method to predict performance from architecture features """
-        raise NotImplementedError
+    def predict(self, features, true_eval, **kwargs):
+        """ method to predict performance including ? from architecture features """
+        if not true_eval:
+            pred = self.forward(features, np.random.choice(self.models))
+        else:
+            pred = 0
+            for model in self.models:
+                pred += self.forward(features, model)
+
+            pred = pred / len(self.models)
+        return pred
