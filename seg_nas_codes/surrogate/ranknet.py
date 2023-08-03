@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 
-from seg_nas_codes.surrogate.utils import get_correlation
+from utils import get_correlation
 
 _DEBUG = False
 
@@ -310,6 +310,8 @@ def predict(net, query, device):
 
 if __name__ == '__main__':
     import json
+    # from seg_nas_codes.search.search_space import BasicSearchSpace
+    sys.path.append('F:\\EVO')
     from seg_nas_codes.search.search_space import BasicSearchSpace
     from lightgbm import LGBMRegressor
 

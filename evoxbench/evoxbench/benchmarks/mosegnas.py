@@ -21,8 +21,15 @@ class MoSegNASSearchSpace(SearchSpace):
         super().__init__(**kwargs)
         self.subnet_str = subnet_str
 
-        #number of MAX layers of each stage:
-        # TODO [2, 2, 3, 4, 2] ?
+        # number of MAX layers of each stage:
+        # [2, 2, 3, 4, 2] ?
+        # range of number of each layer estimated
+        # [0/2,
+        # 0~2,
+        # 0~2,
+        # 0~2,
+        # 0~2
+        # ]
         self.depth_list = [2, 3, 4, 2]
 
         #choice of the layer except input stem
@@ -95,13 +102,13 @@ class MoSegNASEvaluator(Evaluator):
                  true_eval = False, # true_eval = if evaluate based on data or true inference result
                  objs='err&params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
                  **kwargs):
-    
+        """ evalute the performance of the given subnets """
         batch_stats = []
 
         for index, subnet_encoded in enumerate(archs):
             print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
 
-            accs = self.surrogate_model.fit(subnet_encoded, true_eval = true_eval)
+            accs = self.surrogate_model.predict(subnet_encoded, true_eval = true_eval)
             stats = {}
             # objs='err&params&flops&latency&FPS&mIoU'
             if 'err' in objs:
@@ -128,6 +135,18 @@ class MoSegNASSurrogateModel(SurrogateModel):
                  **kwargs):
        super().__init__()
        self.pretrain_model = json.load(open(pretrained, 'r'))
+       self.search_space = MoSegNASSearchSpace()
+       self.subnet  = self.search_space.encode(self.pretrain_model)
+       # params&flops&latency&FPS&mIoU
+
+        # 求和
+       self.params = self.pretrain_model['params']
+       self.flops = self.pretrain_model['flops']
+
+       # 实测
+        #    self.latency = self.pretrain_model['latency']
+        #    self.FPS = self.pretrain_model['FPS']
+        #    self.mIoU = self.pretrain_model['mIoU']
 
     def name(self):
         return 'MoSegNASSurrogateModel'
@@ -136,14 +155,16 @@ class MoSegNASSurrogateModel(SurrogateModel):
         """ method to perform forward in a surrogate model from data """
         raise NotImplementedError
 
-    def predict(self, features, true_eval, **kwargs):
-        """ method to predict performance including ? from architecture features """
-        if not true_eval:
-            pred = self.forward(features, np.random.choice(self.models))
-        else:
-            pred = 0
-            for model in self.models:
-                pred += self.forward(features, model)
+    def predict(self, subnet, **kwargs):
+        """ method to predict performance including err&params&flops&latency&FPS&mIoU from given architecture features(subnets) """
+        pred = {}
+        pred['acc'] = self.fit(subnet, self.pretrain_model)
+        
+        pred['params'] = params
+        pred['flops'] = flops
 
-            pred = pred / len(self.models)
+
+        pred['latency'] = latency
+        pred['FPS'] = 1000/latency
+        pred['mIoU'] = mIoU
         return pred
