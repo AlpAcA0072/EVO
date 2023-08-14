@@ -108,40 +108,49 @@ class MoSegNASEvaluator(Evaluator):
         for index, subnet_encoded in enumerate(archs):
             print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
 
-            accs = self.surrogate_model.predict(subnet_encoded, true_eval = true_eval)
+            results = self.surrogate_model.predict(subnet_encoded, true_eval = true_eval)
             stats = {}
             # objs='err&params&flops&latency&FPS&mIoU'
+
+            # surrogate models' returns
             if 'err' in objs:
                 stats['err'] = 1 - accs
             if 'params' in objs:
                 stats['err'] = params
             if 'flops' in objs:
                 stats['err'] = flops
-            if 'latency' in objs:
-                stats['err'] = latency
-            if 'FPS' in objs:
-                stats['err'] = FPS
-            if 'mIoU' in objs:
-                stats['err'] = mIoU
-            batch_stats.append(stats)
+
+            # inference result
+            if 'latency' or 'FPS' or 'mIoU' in objs:
+                # TODO: model构建
+                if 'latency'  in objs:
+                    stats['err'] = latency
+                if 'FPS' in objs:
+                    stats['err'] = 1000.0 / latency
+                if 'mIoU' in objs:
+                    stats['err'] = mIoU
+                batch_stats.append(stats)
             
         return batch_stats
 
-
+class MosegNASTempModels():
+    def __init__(self) -> None:
+        pass
  
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self, 
                  pretrained, 
                  **kwargs):
         super().__init__()
-        self.pretrain_model = json.load(open(pretrained, 'r'))
+        # TODO: 根据已有数据从代理模型返回params和flops指标
+        self.pretrained_data = json.load(open(pretrained, 'r'))
         self.search_space = MoSegNASSearchSpace()
         self.subnet  = self.search_space.encode(self.pretrain_model)
         # params&flops&latency&FPS&mIoU
 
         # 求和
-        self.params = self.pretrain_model['params']
-        self.flops = self.pretrain_model['flops']
+        # self.params = self.pretrained_model['params']
+        # self.flops = self.pretrained_model['flops']
 
         # 实测
         # self.latency = self.pretrain_model['latency']
@@ -153,17 +162,16 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
     def fit(self, X, **kwargs):
         """ method to perform forward in a surrogate model from data """
+        # TODO: load pretrained surrogate model to perform inference, the accs loads the pretrained model, params and flops are the pretrained surrogate model
         raise NotImplementedError
 
-    def predict(self, subnet, **kwargs):
-        """ method to predict performance including err&params&flops&latency&FPS&mIoU from given architecture features(subnets) """
+    def predict(self, subnet, true_eval, **kwargs):
+        """ method to predict performance including acc&params&flops from given architecture features(subnets) """
         pred = {}
-        pred['acc'] = self.fit(subnet, self.pretrain_model)
-        
-        pred['params'] = params
-        pred['flops'] = flops
+        if true_eval:
+            pred['acc'], pred['params'], pred['flops'] = self.fit(subnet, self.pretrain_model)
+        else:
+            # TODO: 从表中采数据
+            pass
 
-        pred['latency'] = latency
-        pred['FPS'] = 1000/latency
-        pred['mIoU'] = mIoU
         return pred
