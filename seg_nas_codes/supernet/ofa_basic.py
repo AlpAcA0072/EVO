@@ -279,6 +279,7 @@ class OFABasicBlockNets(ResNets):
 
         n_block_list = [base_depth + depth for depth, base_depth in
                         zip(self.depth_list, ResNets.BASE_DEPTH_LIST)]
+        # stride_list of each stage, indicating that from 2nd to 4th layer share the same number of params
         stride_list = [1, 2, 2, 2]
 
         # build input stem
@@ -289,6 +290,7 @@ class OFABasicBlockNets(ResNets):
         ]
 
         # blocks
+        # construct layers of each stae according to the `n_block_list`(depth_list)
         blocks = []
         for d, width, s in zip(n_block_list, stage_width_list, stride_list):
             for i in range(d):

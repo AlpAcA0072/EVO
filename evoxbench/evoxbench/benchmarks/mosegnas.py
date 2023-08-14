@@ -20,7 +20,7 @@ class MoSegNASSearchSpace(SearchSpace):
     def __init__(self, subnet_str=True, **kwargs):
         super().__init__(**kwargs)
         self.subnet_str = subnet_str
-
+        # stride_list = [1, 2, 2, 2]
         # number of MAX layers of each stage:
         # [2, 2, 3, 4, 2] ?
         # range of number of each layer estimated
@@ -112,7 +112,7 @@ class MoSegNASEvaluator(Evaluator):
             stats = {}
             # objs='err&params&flops&latency&FPS&mIoU'
             if 'err' in objs:
-               stats['err'] = 1 - accs
+                stats['err'] = 1 - accs
             if 'params' in objs:
                 stats['err'] = params
             if 'flops' in objs:
@@ -133,20 +133,20 @@ class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self, 
                  pretrained, 
                  **kwargs):
-       super().__init__()
-       self.pretrain_model = json.load(open(pretrained, 'r'))
-       self.search_space = MoSegNASSearchSpace()
-       self.subnet  = self.search_space.encode(self.pretrain_model)
-       # params&flops&latency&FPS&mIoU
+        super().__init__()
+        self.pretrain_model = json.load(open(pretrained, 'r'))
+        self.search_space = MoSegNASSearchSpace()
+        self.subnet  = self.search_space.encode(self.pretrain_model)
+        # params&flops&latency&FPS&mIoU
 
         # 求和
-       self.params = self.pretrain_model['params']
-       self.flops = self.pretrain_model['flops']
+        self.params = self.pretrain_model['params']
+        self.flops = self.pretrain_model['flops']
 
-       # 实测
-        #    self.latency = self.pretrain_model['latency']
-        #    self.FPS = self.pretrain_model['FPS']
-        #    self.mIoU = self.pretrain_model['mIoU']
+        # 实测
+        # self.latency = self.pretrain_model['latency']
+        # self.FPS = self.pretrain_model['FPS']
+        # self.mIoU = self.pretrain_model['mIoU']
 
     def name(self):
         return 'MoSegNASSurrogateModel'
@@ -162,7 +162,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
         
         pred['params'] = params
         pred['flops'] = flops
-
 
         pred['latency'] = latency
         pred['FPS'] = 1000/latency
