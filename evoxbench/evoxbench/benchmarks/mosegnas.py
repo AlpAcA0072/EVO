@@ -37,6 +37,7 @@ class MoSegNASSearchSpace(SearchSpace):
         #choice of the layer except input stem
         self.expand_ratio_list = [0.2, 0.25, 0.35]
 
+        # d e w
         self.categories = [list(range(d + 1)) for d in self.depth_list]
         self.categories += [list(range(3))] * 13
         self.categories += [list(range(3))] * 6
@@ -53,6 +54,7 @@ class MoSegNASSearchSpace(SearchSpace):
             return x
     
     def _encode(self, subnet_str):
+        # subnet_str只包括config部分不包括params部分
         e = [np.where(_e == np.array(self.expand_ratio_list))[0][0] for _e in subnet_str['e']]
         return subnet_str['d'] + e + subnet_str['w']
     
@@ -111,31 +113,26 @@ class MoSegNASEvaluator(Evaluator):
         for index, subnet_encoded in enumerate(archs):
             print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
 
-            # results contains err&params&flops at most
-            results = self.surrogate_model.predict(subnet = subnet_encoded,
+            # pred contains err&params&flops at most
+            pred = self.surrogate_model.predict(subnet = subnet_encoded,
                                                    true_eval = true_eval, 
                                                    objs = objs)
-            stats = {}
             # objs='err&params&flops&latency&FPS&mIoU'
 
             # surrogate models' returns
             if 'err' in objs:
-                stats['err'] = 1 - acc
-            if 'params' in objs:
-                stats['err'] = params
-            if 'flops' in objs:
-                stats['err'] = flops
-
-            # TODO: inference result, 如果给定的model和json file中已有的model完全一致也可以直接使用json file中已有的数据
-            if 'latency' or 'FPS' or 'mIoU' in objs:
-                # TODO: model构建
-                if 'latency'  in objs:
-                    stats['err'] = latency
-                if 'FPS' in objs:
-                    stats['err'] = 1000.0 / latency
-                if 'mIoU' in objs:
-                    stats['err'] = mIoU
-                batch_stats.append(stats)
+                pred['err'] = 1 - pred['acc']
+            # if 'params' in objs:
+            #     stats['err'] = pred['params']
+            # if 'flops' in objs:
+            #     stats['err'] = pred['flops']
+            # if 'latency' in objs:
+            #     stats['err'] = pred['latency']
+            if 'FPS' in objs:
+                pred['FPS'] = 1000.0 / pred['latency']
+            # if 'mIoU' in objs:
+            #     stats['mIoU'] = pred['mIoU']
+            batch_stats.append(pred)
             
         return batch_stats
 
@@ -150,10 +147,13 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 #  pretrained_model,
                  **kwargs):
         super().__init__()
-        # TODO: 根据已有数据从代理模型返回params和flops指标
+        # [(depth/layers)1, 3, 0, 1,
+        #  (expand ratio/area of the layer)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
+        #  (width mult/channels)2, 2, 2, 0, 0]
+
         self.pretrained_result = json.load(open(pretrained_json, 'r'))
         searchSpace = MoSegNASSearchSpace()
-        self.pretrained_result = searchSpace._encode(self.pretrained_result)
+        # self.pretrained_result = searchSpace._encode(self.pretrained_result)
 
         model = MosegNASTempModels()
         # load pretrained weights
@@ -176,16 +176,19 @@ class MoSegNASSurrogateModel(SurrogateModel):
     def name(self):
         return 'MoSegNASSurrogateModel'
 
-    def fit(self, **kwargs):
+    def fit(self, subnet):
+        # subnet = [{'d': [...], 'e': [...], 'w': [...]}]
+        # self.pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': 2762960, 'flops': 6400445327, 'latency': 4.957451937742715, 'FPS': 201.71652949102148, 'mIoU': 0.6482}, {...}, {...}]
         """ method to perform forward in a surrogate model from data """
-        # TODO: 从表中采params和flops数据
+        for result in self.pretrained_result:
+            if 'config' in result and isinstance(result['config'], dict):
+                config = result['config']
+                if all(key in config and config[key] == value for key, value in subnet[0].items()):
+                    return result['params'], result['flops'], result['latency'], result['mIoU']
+        # 不存在时直接返回空值 or ？
+        return None
 
-        raise NotImplementedError
-    
-
-    # TODO
     def params_predictor(self, subnet):
-        # if subnet in self.pretrained_result:
         pass
 
     def flops_predictor(self, subnet):
@@ -199,7 +202,8 @@ class MoSegNASSurrogateModel(SurrogateModel):
         pred = {}
 
         # acc result is not included in the json file
-        if 'err' in objs:
+        if 'err' or 'latency' or 'FPS' or 'mIoU' in objs:
+            # TODO: model构建
             pred['acc'] = self.acc_predictor(subnet = subnet)
 
         if true_eval:
@@ -208,13 +212,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
             if 'flops' in objs:
                 pred['flops'] = self.flops_predictor(subnet = subnet)
         else:
-            # TODO: 从表中采数据
-            pred['params'], pred['flops'] = self.fit(subnet = subnet)
-            pass
-
+            pred['params'], pred['flops'], pred['latency'], pred['mIoU'] = self.fit(subnet = subnet)
+        
         return pred
-
-
-if __name__ == '__main__':
-    surrogateModel = MoSegNASSurrogateModel(pretrained_json = 'F:\EVO\data\moseg\ofa_fanet_plus_bottleneck_rtx_fps@0.5.json')
-    pass
