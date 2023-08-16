@@ -128,9 +128,85 @@ class MoSegNASEvaluator(Evaluator):
         return batch_stats
 
 # TODO: model implementation
-class MosegNASTempModels():
-    def __init__(self) -> None:
-        pass
+class MosegNASRankNet():
+    def __init__(self, n_layers=2, n_hidden=400,
+                 n_output=1, drop=0.2, trn_split=0.8,
+                 lr=8e-4, epochs=300, loss='mse'):
+        self.model = None
+        self.n_layers = n_layers
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        self.drop = drop
+        self.name = 'RankNet'
+        self.trn_split = trn_split
+        self.lr = lr
+        self.epochs = epochs
+        self.loss = loss
+
+    def fit(self, x, y, pretrained=None):
+
+        self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
+
+        # 默认pretrained
+        self.model.load_state_dict(pretrained)
+
+        return self
+
+    def predict(self, test_data):
+        return predict(self.model, test_data, device=self.device)
+
+    def load_state_dict(self, state_dict):
+        self.model.load_state_dict(state_dict)
+
+# TODO: model implementation
+class Net:
+    def __init__(self, n_feature, n_layers=2, n_hidden=300, n_output=1, drop=0.2):
+        self.n_feature = n_feature
+        self.n_layers = n_layers
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        self.drop = drop
+
+        self.weights = []
+        self.biases = []
+
+        # Initialize weights and biases
+        self.weights.append(np.random.uniform(-1.0/np.sqrt(n_feature), 1.0/np.sqrt(n_feature), size=(n_hidden, n_feature)))
+        self.biases.append(np.zeros((n_hidden, 1)))
+
+        for _ in range(n_layers):
+            self.weights.append(np.random.uniform(-1.0/np.sqrt(n_hidden), 1.0/np.sqrt(n_hidden), size=(n_hidden, n_hidden)))
+            self.biases.append(np.zeros((n_hidden, 1)))
+
+        self.weights.append(np.random.uniform(-1.0/np.sqrt(n_hidden), 1.0/np.sqrt(n_hidden), size=(n_output, n_hidden)))
+        self.biases.append(np.zeros((n_output, 1)))
+
+    def relu(self, x):
+        return np.maximum(0, x)
+
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def dropout(self, x, p):
+        mask = np.random.binomial(1, 1-p, size=x.shape)
+        return x * mask / (1 - p)
+
+    def forward(self, x):
+        x = x.reshape(-1, self.n_feature).T
+        for i in range(len(self.weights) - 1):
+            x = np.dot(self.weights[i], x) + self.biases[i]
+            x = self.relu(x)
+            x = self.dropout(x, self.drop)
+        x = np.dot(self.weights[-1], x) + self.biases[-1]
+        return x
+
+    @staticmethod
+    def init_weights(m):
+        if isinstance(m, np.ndarray):
+            n = m.shape[1]
+            y = 1.0 / np.sqrt(n)
+            m = np.random.uniform(-y, y, size=m.shape)
+        return m
  
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,

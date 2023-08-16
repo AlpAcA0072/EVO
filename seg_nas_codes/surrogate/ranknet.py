@@ -336,6 +336,8 @@ if __name__ == '__main__':
     # state_dicts = []
     # state_dicts = torch.load('../surrogate/ranknet_mIoU.pth', map_location='cpu')
     # state_dicts = torch.load('../surrogate/ranknet_latency.pth', map_location='cpu')
+    state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.pth', map_location='cpu')
+    # state_dicts = torch.load('F:\EVO\data\moseg\pretrained\surrogate_model\ranknet_mIoU.pth', map_location='cpu')
 
     for i, test_split in enumerate(np.array_split(perm, 10)):
 
