@@ -141,11 +141,15 @@ class MosegNASRankNet():
         self.trn_split = trn_split
         self.lr = lr
         self.epochs = epochs
+        self.n_feature = None
         self.loss = loss
+        self.weights = []
+        self.biases = []
 
     def fit(self, x):
         # 默认pretrained
-        self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
+        self.n_feature = x.shape[1]
+        #TODO: 根据x初始化weights和biases
         return self
 
     def predict(self, test_data):
@@ -157,30 +161,7 @@ class MosegNASRankNet():
         data = data.T
         pred = self.model(data)
         return pred[:, 0]
-
-# TODO: model implementation
-class Net:
-    def __init__(self, n_feature, n_layers=2, n_hidden=300, n_output=1, drop=0.2):
-        self.n_feature = n_feature
-        self.n_layers = n_layers
-        self.n_hidden = n_hidden
-        self.n_output = n_output
-        self.drop = drop
-
-        self.weights = []
-        self.biases = []
-
-        # Initialize weights and biases
-        self.weights.append(np.random.uniform(-1.0/np.sqrt(n_feature), 1.0/np.sqrt(n_feature), size=(n_hidden, n_feature)))
-        self.biases.append(np.zeros((n_hidden, 1)))
-
-        for _ in range(n_layers):
-            self.weights.append(np.random.uniform(-1.0/np.sqrt(n_hidden), 1.0/np.sqrt(n_hidden), size=(n_hidden, n_hidden)))
-            self.biases.append(np.zeros((n_hidden, 1)))
-
-        self.weights.append(np.random.uniform(-1.0/np.sqrt(n_hidden), 1.0/np.sqrt(n_hidden), size=(n_output, n_hidden)))
-        self.biases.append(np.zeros((n_output, 1)))
-
+    
     def relu(self, x):
         return np.maximum(0, x)
 
@@ -207,7 +188,7 @@ class Net:
             y = 1.0 / np.sqrt(n)
             m = np.random.uniform(-y, y, size=m.shape)
         return m
- 
+
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,
                  pretrained_json, 

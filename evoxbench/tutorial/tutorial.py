@@ -77,3 +77,4 @@ randomSubnet = [{
             ]
         }]
 params = surrogateModel.params_predictor(subnet=randomSubnet)
+
