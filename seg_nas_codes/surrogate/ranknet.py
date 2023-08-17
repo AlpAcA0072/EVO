@@ -137,7 +137,6 @@ def train(net, x, y,
     perm = torch.randperm(n_samples)
     trn_idx = perm[:int(n_samples * trn_split)]
     vld_idx = perm[int(n_samples * trn_split):]
-
     # trn_data = NumbersDataset(data=np.hstack((x[trn_idx, :], y[trn_idx, np.newaxis])))
     trn_data = NumbersDataset(data=x[trn_idx, :], target=y[trn_idx, np.newaxis])
 
@@ -292,7 +291,6 @@ def validate(net, data, target, device):
 
 
 def predict(net, query, device):
-
     if query.ndim < 2:
         data = torch.zeros(1, query.shape[0])
         data[0, :] = torch.from_numpy(query).float()

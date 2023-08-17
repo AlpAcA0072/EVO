@@ -143,20 +143,20 @@ class MosegNASRankNet():
         self.epochs = epochs
         self.loss = loss
 
-    def fit(self, x, y, pretrained=None):
-
-        self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
-
+    def fit(self, x):
         # 默认pretrained
-        self.model.load_state_dict(pretrained)
-
+        self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
         return self
 
     def predict(self, test_data):
-        return predict(self.model, test_data, device=self.device)
-
-    def load_state_dict(self, state_dict):
-        self.model.load_state_dict(state_dict)
+        if test_data.ndim < 2:
+            data = np.zeros((1, test_data.shape[0]), dtype=np.float32)
+            data[0, :] = test_data
+        else:
+            data = test_data.astype(np.float32)
+        data = data.T
+        pred = self.model(data)
+        return pred[:, 0]
 
 # TODO: model implementation
 class Net:
@@ -219,7 +219,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
         self.pretrained_result = json.load(open(pretrained_json, 'r'))
         searchSpace = MoSegNASSearchSpace()
-        model = MosegNASTempModels()
+        model = MosegNASRankNet()
 
 
     def name(self):
