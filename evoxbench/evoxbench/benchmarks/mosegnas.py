@@ -6,7 +6,6 @@ from collections import OrderedDict
 from pathlib import Path
 import numpy as np
 
-# TODO: 解决import问题，测试subnet结构
 from evoxbench.modules import SearchSpace, Evaluator, Benchmark, SurrogateModel
 
 # from mosegnas.models import MoSegNASResult  # has to be imported after the init method
@@ -87,16 +86,19 @@ class MoSegNASBenchmark(Benchmark):
 
 class MoSegNASEvaluator(Evaluator):
     def __init__(self,
-                #  pretrained,
-                 input_size=(1, 3, 512, 1024),
+                 latency_pretrained,
+                 mIoU_pretrained,
+                #  input_size=(1, 3, 512, 1024),
                   **kwargs):
         super().__init__(**kwargs)
-        self.input_size= input_size
-        # self.pretrained = pretrained
+        # self.input_size= input_size
+        self.latency_pretrained = latency_pretrained,
+        self.mIoU_pretrained = mIoU_pretrained,
+
 
         self.feature_encoder = MoSegNASSearchSpace()
-        # self.surrogate_model = MoSegNASSurrogateModel(pretrained=self.pretrained)
-        self.surrogate_model = MoSegNASSurrogateModel()
+        self.latency_surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.latency_pretrained)
+        self.mIoU_surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.mIoU_pretrained)
         
     @property
     def name(self):
@@ -129,44 +131,59 @@ class MoSegNASEvaluator(Evaluator):
 
 # TODO: model implementation
 class MosegNASRankNet():
-    def __init__(self, n_layers=2, n_hidden=400,
+    def __init__(self, 
+                 pretrained = None,
+                 n_layers=2, n_hidden=400,
                  n_output=1, drop=0.2, trn_split=0.8,
                  lr=8e-4, epochs=300, loss='mse'):
-        self.model = None
         self.n_layers = n_layers
         self.n_hidden = n_hidden
         self.n_output = n_output
         self.drop = drop
-        self.name = 'RankNet'
         self.trn_split = trn_split
         self.lr = lr
         self.epochs = epochs
         self.n_feature = None
         self.loss = loss
+
+        self.model = None
+        self.pretrained = pretrained
+        if pretrained is not None:
+            self.init_weights()
+        else: 
+            self.mode
+            self.randomly_init_weights()
         self.weights = []
         self.biases = []
 
-    def fit(self, x):
-        # 默认pretrained
+        self.name = 'RankNet'
+
+    def init_weights(self, x):
+        # 根据x初始化weights和biases
         self.n_feature = x.shape[1]
         #TODO: 根据x初始化weights和biases
         return self
+    
+    @staticmethod
+    def randomly_init_weights(self, x):
+        pass
+        # if isinstance(x, np.ndarray):
+        #     n = x.shape[1]
+        #     y = 1.0 / np.sqrt(n)
+        #     x = np.random.uniform(-y, y, size=x.shape)
 
-    def predict(self, test_data):
-        if test_data.ndim < 2:
-            data = np.zeros((1, test_data.shape[0]), dtype=np.float32)
-            data[0, :] = test_data
+    def predict(self, x):
+        if x.ndim < 2:
+            data = np.zeros((1, x.shape[0]), dtype=np.float32)
+            data[0, :] = x
         else:
-            data = test_data.astype(np.float32)
+            data = x.astype(np.float32)
         data = data.T
-        pred = self.model(data)
+        pred = self.forward(data)
         return pred[:, 0]
     
     def relu(self, x):
         return np.maximum(0, x)
-
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
 
     def dropout(self, x, p):
         mask = np.random.binomial(1, 1-p, size=x.shape)
@@ -181,26 +198,22 @@ class MosegNASRankNet():
         x = np.dot(self.weights[-1], x) + self.biases[-1]
         return x
 
-    @staticmethod
-    def init_weights(m):
-        if isinstance(m, np.ndarray):
-            n = m.shape[1]
-            y = 1.0 / np.sqrt(n)
-            m = np.random.uniform(-y, y, size=m.shape)
-        return m
+    def train():
+        pass
 
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,
-                 pretrained_json, 
+                 pretrained, 
                  **kwargs):
         super().__init__()
         # [(depth/layers)1, 3, 0, 1,
         #  (expand ratio/area of the layer)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
         #  (width mult/channels)2, 2, 2, 0, 0]
 
-        self.pretrained_result = json.load(open(pretrained_json, 'r'))
+        model = json.load(open(pretrained, 'r'))
         searchSpace = MoSegNASSearchSpace()
         model = MosegNASRankNet()
+        model.fit()
 
 
     def name(self):
