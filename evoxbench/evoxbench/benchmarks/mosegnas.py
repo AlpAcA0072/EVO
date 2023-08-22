@@ -2,9 +2,9 @@ import os
 import random
 import json
 # import torch
-from collections import OrderedDict
 from pathlib import Path
 import numpy as np
+import itertools
 
 from evoxbench.modules import SearchSpace, Evaluator, Benchmark, SurrogateModel
 
@@ -129,7 +129,6 @@ class MoSegNASEvaluator(Evaluator):
             
         return batch_stats
 
-# TODO: model implementation
 class MosegNASRankNet():
     def __init__(self, 
                  pretrained = None,
@@ -147,21 +146,20 @@ class MosegNASRankNet():
         self.loss = loss
 
         self.pretrained = pretrained
+        self.weights = []
+        self.biases = []
         if pretrained is not None:
             self.init_weights()
         else: 
             self.randomly_init_weights()
-        self.weights = []
-        self.biases = []
-
         self.name = 'RankNet'
 
 
-    def init_weights(self, x):
-        # 根据x初始化weights和biases
-        self.n_feature = x.shape[1]
-        #TODO: 根据x初始化weights和biases
-        return self
+    def init_weights(self):
+        #根据self.pretrained初始化weights和biases
+        for i in range (1, len(self.pretrained // 2) + 1):
+            self.weights.append(self.pretrained['W' + str(i)])
+            self.biases.append(self.pretrained['b' + str(i)])
     
     def randomly_init_weights(self, x):
         # 随机初始化weights和bias
@@ -226,24 +224,46 @@ class MosegNASRankNet():
 
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,
-                 pretrained, 
+                 latency_pretrained, 
+                 mIoU_pretrained,
+                 pretrained_result,
                  **kwargs):
         super().__init__()
         # [(depth/layers)1, 3, 0, 1,
         #  (expand ratio/area of the layer)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
         #  (width mult/channels)2, 2, 2, 0, 0]
 
+        self.pretrained_result = pretrained_result
+
         #pretrained中记录了10个model，取均值
-        model = json.load(open(pretrained, 'r'))
+        self.latency_pretrained = json.load(open(latency_pretrained, 'r'))
+        self.mIoU_pretrained = json.load(open(mIoU_pretrained, 'r'))
         searchSpace = MoSegNASSearchSpace()
-        model = MosegNASRankNet()
-        model.fit()
+
+        self.latency_list = []
+        self.mIoU_list = []
+        latency_chunk_size = len(self.latency_pretrained) // 10
+        mIoU_chunk_size = len(self.mIoU_pretrained) // 10
+        for i in range (0, len(self.latency_pretrained), latency_chunk_size):
+            self.latency_list.append(dict(itertools.islice(self.latency_pretrained.items(), i, i + latency_chunk_size)))
+        for i in range (0, len(self.mIoU_pretrained), mIoU_chunk_size):
+            self.mIoU_list.append(dict(itertools.islice(self.mIoU_pretrained.items(), i, i + mIoU_chunk_size)))
+
+        for i, sublist in enumerate(self.latency_list):
+            # print(f"Sublist {i+1}: {sublist}")
+            self.latency_list.append(MosegNASRankNet(pretrained=sublist))
+
+
+        for i, sublist in enumerate(self.mIoU_list):
+            # print(f"Sublist {i+1}: {sublist}")
+            self.mIoU_list.append(MosegNASRankNet(pretrained=sublist))
 
 
     def name(self):
         return 'MoSegNASSurrogateModel'
 
     def fit(self, subnet):
+        # TODO
         # subnet = [{'d': [...], 'e': [...], 'w': [...]}]
         # self.pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': 2762960, 'flops': 6400445327, 'latency': 4.957451937742715, 'FPS': 201.71652949102148, 'mIoU': 0.6482}, {...}, {...}]
         """ method to perform forward in a surrogate model from data """
@@ -255,20 +275,28 @@ class MoSegNASSurrogateModel(SurrogateModel):
         # 不存在时直接返回空值 or ？
         return None
 
-    def params_predictor(self, subnet):
+    def params_predictor(self):
         pass
 
-    def flops_predictor(self, subnet):
+    def flops_predictor(self):
         pass
 
-    def acc_predictor(self, subnet):
+    def acc_predictor(self):
         pass
+
+
 
     def latency_predictor(self, subnet):
-        pass
+        result = 0.0
+        for model in self.latency_list:
+            result += model.forward(subnet)
+        return result / len(self.latency_list)
 
     def mIoU_predictor(self, subnet):
-        pass
+        result = 0.0
+        for model in self.mIoU_list:
+            result += model.forward(subnet)
+        return result / len(self.mIoU_list)
 
     def predict(self, subnet, true_eval, objs, **kwargs):
         """ method to predict performance including acc&params&flops from given architecture features(subnets) """
