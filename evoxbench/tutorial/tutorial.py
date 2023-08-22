@@ -110,6 +110,7 @@ from evoxbench.benchmarks import MoSegNASSearchSpace, MoSegNASEvaluator, MoSegNA
 #     json.dump(new_state_dict, fp)
 # fp.close()
 
-
-surrogateModel = MoSegNASSurrogateModel(pretrained='F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json')
-surrogateModel
+list = {'a' : 1}
+print(list['b'])
+# surrogateModel = MoSegNASSurrogateModel(pretrained='F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json')
+# surrogateModel
