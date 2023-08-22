@@ -146,17 +146,16 @@ class MosegNASRankNet():
         self.n_feature = None
         self.loss = loss
 
-        self.model = None
         self.pretrained = pretrained
         if pretrained is not None:
             self.init_weights()
         else: 
-            self.mode
             self.randomly_init_weights()
         self.weights = []
         self.biases = []
 
         self.name = 'RankNet'
+
 
     def init_weights(self, x):
         # 根据x初始化weights和biases
@@ -164,13 +163,26 @@ class MosegNASRankNet():
         #TODO: 根据x初始化weights和biases
         return self
     
-    @staticmethod
     def randomly_init_weights(self, x):
-        pass
-        # if isinstance(x, np.ndarray):
-        #     n = x.shape[1]
-        #     y = 1.0 / np.sqrt(n)
-        #     x = np.random.uniform(-y, y, size=x.shape)
+        # 随机初始化weights和bias
+        self.n_feature = x.shape[1]
+
+        #Input layer
+        self.weights.append([self.fill(self.n_hidden) for _ in range(self.n_feature)])
+        self.biases.append(self.fill(self.n_hidden))
+
+        # Hidden layers
+        for _ in range(self.n_layers):
+            self.weights.append([self.fill(self.n_hidden) for _ in range(self.n_hidden)])
+            self.biases.append(self.fill(self.n_hidden))
+
+        # Output layer
+        self.weights.append([self.fill(self.n_output) for _ in range(self.n_hidden)])
+        self.biases.append(self.fill(self.n_output))
+
+    @staticmethod
+    def fill(x):
+        return [random.uniform(-1, 1) for _ in range(x)]
 
     def predict(self, x):
         if x.ndim < 2:
@@ -183,20 +195,31 @@ class MosegNASRankNet():
         return pred[:, 0]
     
     def relu(self, x):
-        return np.maximum(0, x)
+        return max(0, x)
 
-    def dropout(self, x, p):
-        mask = np.random.binomial(1, 1-p, size=x.shape)
-        return x * mask / (1 - p)
+    def dropout(self, x):
+        return 0 if random.random() < self.drop else x
+    
+    def linear(self, inputs, weights, biases):
+        return [sum(x * w for x, w in zip(inputs, weights_row)) + b for weights_row, b in zip(weights, biases)]
 
     def forward(self, x):
-        x = x.reshape(-1, self.n_feature).T
-        for i in range(len(self.weights) - 1):
-            x = np.dot(self.weights[i], x) + self.biases[i]
-            x = self.relu(x)
-            x = self.dropout(x, self.drop)
-        x = np.dot(self.weights[-1], x) + self.biases[-1]
-        return x
+        # Input layer
+        outputs = self.linear(x, self.weights[0], self.biases[0])
+        outputs = [self.relu(x) for x in outputs]
+        outputs = [self.dropout(x) for x in outputs]
+
+        # Hidden layers
+        for layer in range(1, len(self.weights) - 1):
+            outputs = self.linear(outputs, self.weights[layer], self.biases[layer])
+            outputs = [self.relu(x) for x in outputs]
+            outputs = [self.dropout(x) for x in outputs]
+
+        # Output layer
+        outputs = self.linear(outputs, self.weights[-1], self.biases[-1])
+        outputs = [self.sigmoid(x) for x in outputs]
+
+        return outputs
 
     def train():
         pass
@@ -210,6 +233,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
         #  (expand ratio/area of the layer)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
         #  (width mult/channels)2, 2, 2, 0, 0]
 
+        #pretrained中记录了10个model，取均值
         model = json.load(open(pretrained, 'r'))
         searchSpace = MoSegNASSearchSpace()
         model = MosegNASRankNet()

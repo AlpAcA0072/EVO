@@ -78,31 +78,36 @@
 #         }]
 # params = surrogateModel.params_predictor(subnet=randomSubnet)
 
-import copy
-import torch
-import json
-model = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.pth')
-for layer, line in enumerate(model):
-    print(f"Layer: {layer + 1}")
-    for line, (key, value) in enumerate(line.items()):
-        print(f"Line: {line + 1}, Parameter: {key}, Value: {value.size()}")
 
-new_state_dict = {}
-w_i, b_i = 1, 1
-for line in model:
-    for key, values in line.items():
-        if 'weight' in key:
-            new_state_dict['W{}'.format(w_i)] = copy.deepcopy(values.cpu().detach().numpy().tolist())
-            w_i += 1
-        if 'bias' in key:
-            new_state_dict['b{}'.format(b_i)] = copy.deepcopy(values.cpu().detach().numpy().tolist())
-            b_i += 1
 
-# for key, values in new_state_dict.items():
-#     print(key)
-#     print(values)
 
-with open('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json', 'w') as fp:
-# with open('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_mIoU.json', 'w') as fp:
-    json.dump(new_state_dict, fp)
-fp.close()
+# import copy
+# import torch
+# import json
+# model = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.pth')
+# for layer, line in enumerate(model):
+#     print(f"Layer: {layer + 1}")
+#     for line, (key, value) in enumerate(line.items()):
+#         print(f"Line: {line + 1}, Parameter: {key}, Value: {value.size()}")
+
+# new_state_dict = {}
+# w_i, b_i = 1, 1
+# for line in model:
+#     for key, values in line.items():
+#         if 'weight' in key:
+#             new_state_dict['W{}'.format(w_i)] = copy.deepcopy(values.cpu().detach().numpy().tolist())
+#             w_i += 1
+#         if 'bias' in key:
+#             new_state_dict['b{}'.format(b_i)] = copy.deepcopy(values.cpu().detach().numpy().tolist())
+#             b_i += 1
+
+# # for key, values in new_state_dict.items():
+# #     print(key)
+# #     print(values)
+
+# with open('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json', 'w') as fp:
+# # with open('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_mIoU.json', 'w') as fp:
+#     json.dump(new_state_dict, fp)
+# fp.close()
+
+
