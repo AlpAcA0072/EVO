@@ -41,41 +41,41 @@ config("F:\EVO\database\database", "F:\EVO\data\data")
 
 from evoxbench.benchmarks import MoSegNASSearchSpace, MoSegNASEvaluator, MoSegNASBenchmark, MoSegNASSurrogateModel
 
-# searchSpace = MoSegNASSearchSpace(subnet_str=True)
+searchSpace = MoSegNASSearchSpace(subnet_str=True)
 # surrogateModel = MoSegNASSurrogateModel(pretrained_json = 'F:\EVO\data\moseg\ofa_fanet_plus_bottleneck_rtx_fps@0.5.json')
 # randomSubnet = searchSpace.sample(n_samples=1)
-# randomSubnet = [{
-#             "d": [
-#                 0,
-#                 0,
-#                 0,
-#                 0,
-#                 1
-#             ],
-#             "e": [
-#                 0.2,
-#                 0.2,
-#                 0.2,
-#                 0.2,
-#                 0.35,
-#                 0.25,
-#                 0.25,
-#                 0.2,
-#                 0.35,
-#                 0.2,
-#                 0.2,
-#                 0.2,
-#                 0.25
-#             ],
-#             "w": [
-#                 1,
-#                 0,
-#                 0,
-#                 1,
-#                 2,
-#                 2
-#             ]
-#         }]
+randomSubnet = [{
+            "d": [
+                0,
+                0,
+                0,
+                0,
+                1
+            ],
+            "e": [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.35,
+                0.25,
+                0.25,
+                0.2,
+                0.35,
+                0.2,
+                0.2,
+                0.2,
+                0.25
+            ],
+            "w": [
+                1,
+                0,
+                0,
+                1,
+                2,
+                2
+            ]
+        }]
 # params = surrogateModel.params_predictor(subnet=randomSubnet)
 
 
@@ -110,7 +110,13 @@ from evoxbench.benchmarks import MoSegNASSearchSpace, MoSegNASEvaluator, MoSegNA
 #     json.dump(new_state_dict, fp)
 # fp.close()
 
-list = {'a' : 1}
-print(list['b'])
-# surrogateModel = MoSegNASSurrogateModel(pretrained='F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json')
-# surrogateModel
+surrogate_pretrained_list = {'latency': 'F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json'}
+surrogateModel = MoSegNASSurrogateModel(surrogate_pretrained_list=surrogate_pretrained_list)
+
+subnet = searchSpace._encode(randomSubnet[0])
+latency = surrogateModel.surrogate_predictor(
+    subnet=subnet,
+    pretrained_predictor=surrogate_pretrained_list['latency']
+)
+
+print(latency)

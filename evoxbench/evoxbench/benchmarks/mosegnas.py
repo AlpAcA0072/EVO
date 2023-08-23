@@ -1,6 +1,7 @@
 import os
 import random
 import json
+import math
 # import torch
 from pathlib import Path
 import numpy as np
@@ -157,7 +158,7 @@ class MosegNASRankNet():
 
     def init_weights(self):
         #根据self.pretrained初始化weights和biases
-        for i in range (1, len(self.pretrained // 2) + 1):
+        for i in range (int(list(self.pretrained.keys())[0][1:]), len(self.pretrained) // 2 + int(list(self.pretrained.keys())[0][1:])):
             self.weights.append(self.pretrained['W' + str(i)])
             self.biases.append(self.pretrained['b' + str(i)])
     
@@ -200,22 +201,27 @@ class MosegNASRankNet():
     
     def linear(self, inputs, weights, biases):
         return [sum(x * w for x, w in zip(inputs, weights_row)) + b for weights_row, b in zip(weights, biases)]
+    
 
+    def sigmoid(self, x):
+        return 1 / (1 + math.exp(-x))
+    
     def forward(self, x):
         # Input layer
         outputs = self.linear(x, self.weights[0], self.biases[0])
         outputs = [self.relu(x) for x in outputs]
-        outputs = [self.dropout(x) for x in outputs]
 
         # Hidden layers
         for layer in range(1, len(self.weights) - 1):
             outputs = self.linear(outputs, self.weights[layer], self.biases[layer])
             outputs = [self.relu(x) for x in outputs]
-            outputs = [self.dropout(x) for x in outputs]
+        
+        # Dropout layer
+        outputs = [self.dropout(x) for x in outputs]
 
         # Output layer
         outputs = self.linear(outputs, self.weights[-1], self.biases[-1])
-        outputs = [self.sigmoid(x) for x in outputs]
+        # outputs = [self.sigmoid(x) for x in outputs]
 
         return outputs
 
@@ -224,8 +230,8 @@ class MosegNASRankNet():
 
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,
-                surrogate_pretrained_list,
-                pretrained_json,
+                surrogate_pretrained_list = None,
+                pretrained_json = None,
                 **kwargs):
         super().__init__()
         # [(depth/layers)1, 3, 0, 1,
@@ -235,8 +241,13 @@ class MoSegNASSurrogateModel(SurrogateModel):
         self.pretrained_result = pretrained_json
 
         #pretrained中记录了10个model，取均值
-        self.latency_pretrained = surrogate_pretrained_list['latency']
-        self.mIoU_pretrained = surrogate_pretrained_list['mIoU']
+        if 'latency' in surrogate_pretrained_list:
+            self.latency_pretrained = surrogate_pretrained_list['latency']
+        if 'mIoU' in surrogate_pretrained_list:
+            self.mIoU_pretrained = surrogate_pretrained_list['mIoU']
+        else: 
+            self.latency_pretrained = None
+            self.mIoU_pretrained = None
 
 
     def name(self):
@@ -264,11 +275,12 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
 
     # latency \ mIoU 
+    # TODO: 预测的值不符合预期
     def surrogate_predictor(self, subnet, pretrained_predictor):
         pretrained_list = json.load(open(pretrained_predictor, 'r'))
         list = []
         model_list = []
-        chunk_size = len(pretrained_predictor) // 10
+        chunk_size = len(pretrained_list) // 10
         result = 0.0
         for i in range (0, len(pretrained_list), chunk_size):
             list.append(dict(itertools.islice(pretrained_list.items(), i, i + chunk_size)))
@@ -278,7 +290,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
             model_list.append(MosegNASRankNet(pretrained=sublist))
 
         for model in model_list:
-            result += model.forward(subnet)
+            result += model.forward(subnet)[0]
         return result / len(model_list)
 
     def predict(self, subnet, true_eval, objs, **kwargs):
@@ -297,7 +309,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
             # MLP预测
             if 'latency' in objs:
-                if 
+                # if 
                 pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained)
             if 'mIoU' in objs:
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained)

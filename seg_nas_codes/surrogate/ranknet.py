@@ -73,11 +73,13 @@ class Net(nn.Module):
         self.drop = nn.Dropout(p=drop)
 
     def forward(self, x):
+        print(x.shape)
         x = self.stem(x)
         x = self.hidden(x)
         x = self.drop(x)
         x = self.regressor(x)  # linear output
         # return self.sigmoid(x)
+        print(x.shape)
         return x
 
     @staticmethod
