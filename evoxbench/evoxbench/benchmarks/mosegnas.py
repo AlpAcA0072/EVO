@@ -2,7 +2,6 @@ import os
 import random
 import json
 import math
-# import torch
 from pathlib import Path
 import numpy as np
 import itertools
@@ -67,9 +66,16 @@ class MoSegNASSearchSpace(SearchSpace):
         raise NotImplementedError            
 
 class MoSegNASBenchmark(Benchmark):
-    def __init__(self, normalized_objectives=False, **kwargs):
+    def __init__(self, 
+                normalized_objectives=False,
+                surrogate_pretrained_list = {'latency': get_path('pretrained/surrogate_model/ranknet_latency.json'), 
+                'mIoU': get_path('pretrained/surrogate_model/ranknet_mIoU.json')},
+                pretrained_json = get_path('pretrained/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json'),
+                **kwargs):
         self.search_space = MoSegNASSearchSpace()
-        self.evaluator = MoSegNASEvaluator()
+        self.surrogate_pretrained_list = surrogate_pretrained_list
+        self.pretrained_json =pretrained_json
+        self.evaluator = MoSegNASEvaluator(surrogate_pretrained_list, pretrained_json)
         super().__init__(self.search_space, self.evaluator, normalized_objectives, **kwargs)
 
     @property
@@ -86,20 +92,15 @@ class MoSegNASBenchmark(Benchmark):
         print(F)
 
 class MoSegNASEvaluator(Evaluator):
-    def __init__(self,
-                 latency_pretrained,
-                 mIoU_pretrained,
-                #  input_size=(1, 3, 512, 1024),
+    def __init__(self, 
+                surrogate_pretrained_list=None,
+                 pretrained_json = None,
                   **kwargs):
         super().__init__(**kwargs)
-        # self.input_size= input_size
-        self.latency_pretrained = latency_pretrained,
-        self.mIoU_pretrained = mIoU_pretrained,
-
+        self.surrogate_pretrained_list = surrogate_pretrained_list
 
         self.feature_encoder = MoSegNASSearchSpace()
-        self.latency_surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.latency_pretrained)
-        self.mIoU_surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.mIoU_pretrained)
+        self.surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.surrogate_pretrained_list)
         
     @property
     def name(self):
@@ -262,7 +263,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
             if 'config' in result and isinstance(result['config'], dict):
                 config = result['config']
                 if all(key in config and config[key] == value for key, value in subnet[0].items()):
-                    return result['params'], result['flops'], result['latency'], result['mIoU']
+                    return [result['params'], result['flops'], result['latency'], result['mIoU']]
         # 不存在时直接返回空值 or ？
         return None
 
@@ -290,7 +291,8 @@ class MoSegNASSurrogateModel(SurrogateModel):
             model_list.append(MosegNASRankNet(pretrained=sublist))
 
         for model in model_list:
-            result += model.forward(subnet)[0]
+            result_list = model.forward(subnet)
+            result += sum(result_list)/len(result_list)
         return result / len(model_list)
 
     def predict(self, subnet, true_eval, objs, **kwargs):
@@ -299,7 +301,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
         # acc result is not included in the json file
         if 'err' or 'flops' or 'params' in objs:
-            # TODO: model构建实测
+            # TODO: model构建
             pass
 
         if true_eval:

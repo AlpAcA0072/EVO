@@ -13,7 +13,7 @@ sys.path.append(r"F:\EVO\evoxbench\evoxbench\database\ORM")
 print('Configurating EvoXBench...')
 from evoxbench.database.init import config
 # config("F:\EVO\evoxbench\evoxbench\database", "F:\EVO\data\data")
-config("F:\EVO\database\database", "F:\EVO\data\data")
+config("F:\EVO\database\database", "F:\EVO\data")
 
 
 # # NAS-Bench-101 search space
@@ -40,6 +40,12 @@ config("F:\EVO\database\database", "F:\EVO\data\data")
 
 
 from evoxbench.benchmarks import MoSegNASSearchSpace, MoSegNASEvaluator, MoSegNASBenchmark, MoSegNASSurrogateModel
+
+import evoxbench.benchmarks.mosegnas as mo
+
+# latency = mo.get_path('pretrained/surrogate_model/ranknet_latency.json')
+# mIoU = mo.get_path('pretrained/surrogate_model/ranknet_mIoU.json')
+# pretrained_json = mo.get_path('pretrained/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json')
 
 searchSpace = MoSegNASSearchSpace(subnet_str=True)
 # surrogateModel = MoSegNASSurrogateModel(pretrained_json = 'F:\EVO\data\moseg\ofa_fanet_plus_bottleneck_rtx_fps@0.5.json')
