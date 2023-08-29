@@ -23,7 +23,6 @@ class MoSegNASSearchSpace(SearchSpace):
         self.subnet_str = subnet_str
         # stride_list = [1, 2, 2, 2]
         # number of MAX layers of each stage:
-        # [2, 2, 3, 4, 2] ?
         # range of number of each layer estimated
         # [0/2,
         # 0~2,
@@ -31,7 +30,7 @@ class MoSegNASSearchSpace(SearchSpace):
         # 0~2,
         # 0~2
         # ]
-        self.depth_list = [2, 3, 4, 2]
+        self.depth_list = [2, 2, 3, 4, 2]
 
         #choice of the layer except input stem
         self.expand_ratio_list = [0.2, 0.25, 0.35]
@@ -40,6 +39,7 @@ class MoSegNASSearchSpace(SearchSpace):
         self.categories = [list(range(d + 1)) for d in self.depth_list]
         self.categories += [list(range(3))] * 13
         self.categories += [list(range(3))] * 6
+        self.category_mapping = {i: {val: j for j, val in enumerate(cat)} for i, cat in enumerate(self.categories)}
         
     @property
     def name(self):
@@ -60,6 +60,22 @@ class MoSegNASSearchSpace(SearchSpace):
     def _decode(self, x):
         e = [self.expand_ratio_list[i] for i in x[4:-5]]
         return {'d': x[:4].tolist(), 'e': e, 'w': x[-5:].tolist()}
+    
+    def _one_hot_encode(self, X):
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+
+        encoded_sample = []
+        for feature_index, feature_value in enumerate(X):
+            encoding = [0] * len(self.categories[feature_index])
+            encoding[self.category_mapping[feature_index][feature_value]] = 1
+            encoded_sample.extend(encoding)
+
+        return encoded_sample
+
+        
+        
+
     
     def visualize(self):
         """ method to visualize an architecture """

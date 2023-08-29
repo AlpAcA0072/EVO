@@ -118,6 +118,7 @@ class RankNet:
         self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
 
         if pretrained:
+            # print(pretrained['stem.0.weight'].shape)
             self.model.load_state_dict(pretrained)
         else:
             self.model = train(

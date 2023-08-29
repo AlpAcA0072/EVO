@@ -120,6 +120,7 @@ surrogate_pretrained_list = {'latency': 'F:\\EVO\\data\\moseg\\pretrained\\surro
 surrogateModel = MoSegNASSurrogateModel(surrogate_pretrained_list=surrogate_pretrained_list)
 
 subnet = searchSpace._encode(randomSubnet[0])
+subnet = searchSpace._one_hot_encode(subnet)
 latency = surrogateModel.surrogate_predictor(
     subnet=subnet,
     pretrained_predictor=surrogate_pretrained_list['latency']
