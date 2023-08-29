@@ -247,6 +247,10 @@ class MosegNASRankNet():
     def train():
         pass
 
+class OFAFANetPlus():
+    def __init__(self) -> None:
+        pass
+
 class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,
                 surrogate_pretrained_list = None,
@@ -259,7 +263,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
         self.pretrained_result = pretrained_json
 
-        #pretrained中记录了10个model，取均值
+        # 10个model，取均值
         if 'latency' in surrogate_pretrained_list:
             self.latency_pretrained = surrogate_pretrained_list['latency']
         if 'mIoU' in surrogate_pretrained_list:

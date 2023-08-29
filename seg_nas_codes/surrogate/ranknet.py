@@ -116,7 +116,7 @@ class RankNet:
     def fit(self, x, y, pretrained=None):
 
         self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
-        
+
         if pretrained:
             self.model.load_state_dict(pretrained)
         else:
@@ -322,6 +322,8 @@ if __name__ == '__main__':
     meta_data = json.load(open("f:/EVO/seg_nas_codes/data/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json", "r"))
     subnet_str = [d['config'] for d in meta_data]
     features = search_space.features(search_space.encode(subnet_str))
+
+    # y
     # targets = np.array([d['mIoU'] for d in meta_data])
     targets = np.array([d['latency'] for d in meta_data])
 
@@ -342,7 +344,6 @@ if __name__ == '__main__':
     # state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_mIoU.pth', map_location='cpu')
 
     for i, test_split in enumerate(np.array_split(perm, 10)):
-
         train_split = np.setdiff1d(perm, test_split, assume_unique=True)
 
         # ranknet
