@@ -69,6 +69,8 @@ class BasicSearchSpace(OFAFANetSearchSpace):
         super().__init__(**kwargs)
 
         # self.depth_list = [2, 3, 4, 2]
+        # TODO: HOW TO GET 78 IN PRETRAINED MODEL
+        # [2, 2, 4, 6, 4]
         self.depth_list = [2, 2, 3, 4, 2]
         self.expand_ratio_list = [0.2, 0.25, 0.35]
         # self.expand_ratio_list = [0.65, 0.8, 1.0]
@@ -81,8 +83,11 @@ class BasicSearchSpace(OFAFANetSearchSpace):
         self.ub = self.depth_list + [2] * 21
 
         # create the categories for each variable
+        # [3, 3, 4, 5, 3]
         self.categories = [list(range(d + 1)) for d in self.depth_list]
         # self.categories += [list(range(3))] * 16
+
+        # 19 * 3
         self.categories += [list(range(3))] * 13
         self.categories += [list(range(3))] * 6
         # self.categories += [list(range(3))] * 5

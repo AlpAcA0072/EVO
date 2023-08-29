@@ -134,11 +134,11 @@ class MoSegNASEvaluator(Evaluator):
 class MosegNASRankNet():
     def __init__(self, 
                  pretrained = None,
-                 n_layers=2, n_hidden=400,
+                 n_hidden_layers=2, n_hidden_neurons=400,
                  n_output=1, drop=0.2, trn_split=0.8,
                  lr=8e-4, epochs=300, loss='mse'):
-        self.n_layers = n_layers
-        self.n_hidden = n_hidden
+        self.n_hidden_layers = n_hidden_layers
+        self.n_hidden_neurons = n_hidden_neurons
         self.n_output = n_output
         self.drop = drop
         self.trn_split = trn_split
@@ -168,16 +168,16 @@ class MosegNASRankNet():
         self.n_feature = x.shape[1]
 
         #Input layer
-        self.weights.append([self.fill(self.n_hidden) for _ in range(self.n_feature)])
-        self.biases.append(self.fill(self.n_hidden))
+        self.weights.append([self.fill(self.n_hidden_neurons) for _ in range(self.n_feature)])
+        self.biases.append(self.fill(self.n_hidden_neurons))
 
         # Hidden layers
         for _ in range(self.n_layers):
-            self.weights.append([self.fill(self.n_hidden) for _ in range(self.n_hidden)])
-            self.biases.append(self.fill(self.n_hidden))
+            self.weights.append([self.fill(self.n_hidden_neurons) for _ in range(self.n_hidden_neurons)])
+            self.biases.append(self.fill(self.n_hidden_neurons))
 
         # Output layer
-        self.weights.append([self.fill(self.n_output) for _ in range(self.n_hidden)])
+        self.weights.append([self.fill(self.n_output) for _ in range(self.n_hidden_neurons)])
         self.biases.append(self.fill(self.n_output))
 
     @staticmethod
@@ -198,7 +198,7 @@ class MosegNASRankNet():
         return max(0, x)
 
     def dropout(self, x):
-        return 0 if random.random() < self.drop else x
+        return 0. if random.random() < self.drop else x
     
     def linear(self, inputs, weights, biases):
         return [sum(x * w for x, w in zip(inputs, weights_row)) + b for weights_row, b in zip(weights, biases)]
@@ -213,15 +213,17 @@ class MosegNASRankNet():
         outputs = [self.relu(x) for x in outputs]
 
         # Hidden layers
-        for layer in range(1, len(self.weights) - 1):
+        for layer in range(self.n_hidden_layers):
             outputs = self.linear(outputs, self.weights[layer], self.biases[layer])
             outputs = [self.relu(x) for x in outputs]
         
         # Dropout layer
-        outputs = [self.dropout(x) for x in outputs]
+        # outputs = [self.dropout(x) for x in outputs]
 
         # Output layer
         outputs = self.linear(outputs, self.weights[-1], self.biases[-1])
+
+        # Output -> [0, 1]
         # outputs = [self.sigmoid(x) for x in outputs]
 
         return outputs

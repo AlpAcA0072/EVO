@@ -73,13 +73,14 @@ class Net(nn.Module):
         self.drop = nn.Dropout(p=drop)
 
     def forward(self, x):
-        print(x.shape)
+        # print(x.shape)
         x = self.stem(x)
         x = self.hidden(x)
         x = self.drop(x)
         x = self.regressor(x)  # linear output
         # return self.sigmoid(x)
-        print(x.shape)
+        # print(x.shape)
+        # print(x)
         return x
 
     @staticmethod
@@ -192,6 +193,7 @@ def train(net, x, y,
     best_tau = 0
     best_net = copy.deepcopy(net)
     for epoch in range(epochs):
+        print(epoch)
         # trn_inputs = inputs[trn_idx]
         # trn_labels = targets[trn_idx]
         loss_trn = train_one_epoch(net, trn_loader, criterion, optimizer, device)
@@ -347,8 +349,11 @@ if __name__ == '__main__':
         predictor = RankNet(loss='rank', epochs=300, device='cpu')
 
         # no pretrained model
-        # predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
-        predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+        # predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+
+        # pretrained
+        predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
+
         
         pred = predictor.predict(train_inputs[test_split, :])
         rmse, r, rho, tau = get_correlation(pred, train_targets[test_split])
