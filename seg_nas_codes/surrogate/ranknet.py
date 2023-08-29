@@ -116,9 +116,8 @@ class RankNet:
     def fit(self, x, y, pretrained=None):
 
         self.model = Net(x.shape[1], self.n_layers, self.n_hidden, self.n_output, self.drop)
-
+        
         if pretrained:
-            # print(pretrained['stem.0.weight'].shape)
             self.model.load_state_dict(pretrained)
         else:
             self.model = train(
@@ -313,7 +312,6 @@ def predict(net, query, device):
 
 if __name__ == '__main__':
     import json
-    # from seg_nas_codes.search.search_space import BasicSearchSpace
     sys.path.append('F:\\EVO')
     from seg_nas_codes.search.search_space import BasicSearchSpace
     from lightgbm import LGBMRegressor
@@ -321,7 +319,6 @@ if __name__ == '__main__':
     # define the search space
     search_space = BasicSearchSpace()
 
-    # meta_data = json.load(open("../data/ofa_fanet_plus_basic_rtx_fps@0.5.json", "r"))
     meta_data = json.load(open("f:/EVO/seg_nas_codes/data/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json", "r"))
     subnet_str = [d['config'] for d in meta_data]
     features = search_space.features(search_space.encode(subnet_str))
@@ -336,11 +333,13 @@ if __name__ == '__main__':
     perm = np.random.permutation(len(train_targets))
 
     test_preds, lgb_test_preds = 0, 0
-    # state_dicts = []
-    # state_dicts = torch.load('../surrogate/ranknet_mIoU.pth', map_location='cpu')
-    # state_dicts = torch.load('../surrogate/ranknet_latency.pth', map_location='cpu')
-    state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.pth', map_location='cpu')
-    # state_dicts = torch.load('F:\EVO\data\moseg\pretrained\surrogate_model\ranknet_mIoU.pth', map_location='cpu')
+
+    state_dicts = []
+    # latency
+    # state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.pth', map_location='cpu')
+
+    # miou
+    # state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_mIoU.pth', map_location='cpu')
 
     for i, test_split in enumerate(np.array_split(perm, 10)):
 
@@ -350,10 +349,10 @@ if __name__ == '__main__':
         predictor = RankNet(loss='rank', epochs=300, device='cpu')
 
         # no pretrained model
-        # predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+        predictor.fit(train_inputs[train_split, :], train_targets[train_split])
 
         # pretrained
-        predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
+        # predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
 
         
         pred = predictor.predict(train_inputs[test_split, :])
@@ -361,7 +360,7 @@ if __name__ == '__main__':
         print("Fold {} RankNet: rmse = {:.4f}, pearson = {:.4f}, spearman = {:.4f}, kendall = {:.4f}".format(
             i, rmse, r, rho, tau))
 
-        # state_dicts.append(predictor.model.state_dict())
+        state_dicts.append(predictor.model.state_dict())
 
         pred = predictor.predict(test_inputs)
         test_preds += pred
@@ -388,4 +387,4 @@ if __name__ == '__main__':
         rmse, r, rho, tau))
 
     # save
-    # torch.save(state_dicts, "ranknet_latency.pth")
+    torch.save(state_dicts, "ranknet_latency.pth")
