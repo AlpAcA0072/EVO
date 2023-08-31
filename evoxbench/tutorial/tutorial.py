@@ -116,7 +116,8 @@ randomSubnet = [{
 #     json.dump(new_state_dict, fp)
 # fp.close()
 
-surrogate_pretrained_list = {'latency': 'F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json'}
+# surrogate_pretrained_list = {'latency': 'F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json'}
+surrogate_pretrained_list = {'latency': 'F:\\EVO\\ranknet_latency.json'}
 surrogateModel = MoSegNASSurrogateModel(surrogate_pretrained_list=surrogate_pretrained_list)
 
 subnet = searchSpace._encode(randomSubnet[0])

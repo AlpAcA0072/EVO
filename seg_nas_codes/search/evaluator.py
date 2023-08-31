@@ -9,6 +9,9 @@ from abc import ABC, abstractmethod
 import torch
 from torch.utils.data import DataLoader
 
+import os
+sys.path.append('f:\\EVO\\seg_nas_codes')
+
 from supernet.ofa_fanet import OFAFANet
 from supernet.ofa_fanetplus import OFAFANetPlus
 from evaluation.evaluate import MscEval
@@ -228,9 +231,9 @@ if __name__ == '__main__':
         output_aux=False, n_classes=12)
 
     # load checkpoints weights
-    ofa_network.load_state_dict(torch.load(
-        './pretrained/ofa_fanet/camvid/ofa_plus_basic_camvid_depth-expand-width@phase2/model_maxmIOUFull.pth',
-        map_location='cpu'))
+    # ofa_network.load_state_dict(torch.load(
+    #     './pretrained/ofa_fanet/camvid/ofa_plus_basic_camvid_depth-expand-width@phase2/model_maxmIOUFull.pth',
+    #     map_location='cpu'))
     # ofa_network.cuda()
 
     # construct the search space

@@ -8,6 +8,11 @@ import itertools
 
 from evoxbench.modules import SearchSpace, Evaluator, Benchmark, SurrogateModel
 
+min_range = -1
+max_range = 1
+min_value = 1.5595920924939386
+max_value = 2.206984236920299
+
 # from mosegnas.models import MoSegNASResult  # has to be imported after the init method
 
 __all__ = ['MoSegNASSearchSpace', 'MoSegNASEvaluator', 'MoSegNASBenchmark', 'MoSegNASSurrogateModel']
@@ -290,10 +295,12 @@ class MoSegNASSurrogateModel(SurrogateModel):
         return None
 
     def addup_predictor(self):
+        # params & flops
         pass
 
 
     def real_predictor(self):
+        # accs
         pass
 
 
@@ -314,33 +321,31 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
         for model in model_list:
             result_list = model.forward(subnet)
-            result += sum(result_list)/len(result_list)
+            original_data = (np.array(result_list) - min_range) * (max_value - min_value) / (max_range - min_range) + min_value
+            original_data = np.exp(original_data)
+            result += sum(original_data)/len(original_data)
         return result / len(model_list)
 
     def predict(self, subnet, true_eval, objs, **kwargs):
         """ method to predict performance including acc&params&flops from given architecture features(subnets) """
         pred = {}
 
-        # acc result is not included in the json file
-        if 'err' or 'flops' or 'params' in objs:
-            # TODO: model构建
-            pass
-
         if true_eval:
-            # 可用各个子模块求和，不存在则实测
-            if 'params' in objs:
+            # 打表
+            if 'params' or 'flops' in objs:
                 pred['params'] = self.addup_predictor(subnet = subnet)
 
-            # MLP预测
+            # surrogate model
             if 'latency' in objs:
                 # if 
                 pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained)
             if 'mIoU' in objs:
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained)
+            
 
             # 实测
-            if 'flops' in objs or 'err' in objs:
-                pred['flops'], pred['acc'] = self.real_predictor(subnet = subnet)
+            if 'err' in objs:
+                pred['acc'] = self.real_predictor(subnet = subnet)
         else:
             pred['params'], pred['flops'], pred['latency'], pred['mIoU'] = self.fit(subnet = subnet)
         

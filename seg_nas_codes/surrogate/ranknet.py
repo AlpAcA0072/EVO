@@ -327,6 +327,16 @@ if __name__ == '__main__':
     # targets = np.array([d['mIoU'] for d in meta_data])
     targets = np.array([d['latency'] for d in meta_data])
 
+    # MIN-MAX Normalize
+    targets = np.log(targets)
+    min_value = np.min(targets)
+    max_value = np.max(targets)
+    min_range = -1
+    max_range = 1
+
+    # 进行 Min-Max 归一化
+    targets = (targets - min_value) / (max_value - min_value) * (max_range - min_range) + min_range
+
     train_inputs = features[:10000, :]
     test_inputs = features[10000:, :]
     train_targets = targets[:10000]
@@ -338,7 +348,7 @@ if __name__ == '__main__':
 
     state_dicts = []
     # latency
-    # state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.pth', map_location='cpu')
+    state_dicts = torch.load('F:\\EVO\\ranknet_latency.pth', map_location='cpu')
 
     # miou
     # state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_mIoU.pth', map_location='cpu')
@@ -350,13 +360,15 @@ if __name__ == '__main__':
         predictor = RankNet(loss='rank', epochs=300, device='cpu')
 
         # no pretrained model
-        predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+        # predictor.fit(train_inputs[train_split, :], train_targets[train_split])
 
         # pretrained
-        # predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
+        predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
 
         
         pred = predictor.predict(train_inputs[test_split, :])
+        original_data = (pred - min_range) * (max_value - min_value) / (max_range - min_range) + min_value
+        original_data = np.exp(original_data)
         rmse, r, rho, tau = get_correlation(pred, train_targets[test_split])
         print("Fold {} RankNet: rmse = {:.4f}, pearson = {:.4f}, spearman = {:.4f}, kendall = {:.4f}".format(
             i, rmse, r, rho, tau))
@@ -389,3 +401,6 @@ if __name__ == '__main__':
 
     # save
     torch.save(state_dicts, "ranknet_latency.pth")
+    print(min_value, max_value, min_range, max_range)
+    with open('mean_std.txt', 'w') as f:
+        f.write(min_value, max_value, min_range, max_range)
