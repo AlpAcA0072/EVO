@@ -1,41 +1,46 @@
-## Deformable Convolutional Networks V2 with Pytorch 1.7
+# DCN v2 - PyTorch v1.11+ and v2+
 
-### Build
-```bash
-    sh ./make.sh         # build
-    python test.py    # run examples and gradient check 
-```
+* Deformable Convolutional Networks V2 [[Original Repo]](https://github.com/CharlesShang/DCNv2)
+* This repo is customized for Microsoft Windows 10/11
+* Changes were made based on [65472](https://github.com/pytorch/pytorch/pull/65472), [65492](https://github.com/pytorch/pytorch/pull/65492), [66391](https://github.com/pytorch/pytorch/pull/66391), and [69041](https://github.com/pytorch/pytorch/pull/69041)
+* ⚠️ ***Checkout [`torch-legacy`](https://github.com/rathaROG/DCNv2_Windows/tree/torch-legacy) for PyTorch 1.10.x and older***
 
-### An Example
-- deformable conv
-```python
-    from dcn_v2 import DCN
-    input = torch.randn(2, 64, 128, 128).cuda()
-    # wrap all things (offset and mask) in DCN
-    dcn = DCN(64, 64, kernel_size=(3,3), stride=1, padding=1, deformable_groups=2).cuda()
-    output = dcn(input)
-    print(output.shape)
-```
-- deformable roi pooling
-```python
-    from dcn_v2 import DCNPooling
-    input = torch.randn(2, 32, 64, 64).cuda()
-    batch_inds = torch.randint(2, (20, 1)).cuda().float()
-    x = torch.randint(256, (20, 1)).cuda().float()
-    y = torch.randint(256, (20, 1)).cuda().float()
-    w = torch.randint(64, (20, 1)).cuda().float()
-    h = torch.randint(64, (20, 1)).cuda().float()
-    rois = torch.cat((batch_inds, x, y, x + w, y + h), dim=1)
+## Clone & Build
 
-    # mdformable pooling (V2)
-    # wrap all things (offset and mask) in DCNPooling
-    dpooling = DCNPooling(spatial_scale=1.0 / 4,
-                         pooled_size=7,
-                         output_dim=32,
-                         no_trans=False,
-                         group_size=1,
-                         trans_std=0.1).cuda()
+* Clone as `DCNv2`: 
+    ```
+    git clone --single-branch --branch "torch-1.11+" https://github.com/rathaROG/DCNv2_Windows.git DCNv2
+    ```
 
-    dout = dpooling(input, rois)
-```
-    
+* Build DCNv2 `_ext` with the smart `make_develop.bat`:
+    ```
+    cd DCNv2
+    make_develop.bat
+    ```
+    <details><summary><ins>Click here to see an example!</ins></summary>
+
+    <img src="https://raw.githubusercontent.com/rathaROG/screenshot/master/DCNv2_Windows/new_finish.png"/>
+    <img src="https://raw.githubusercontent.com/rathaROG/screenshot/master/DCNv2_Windows/new_start.png"/>
+
+    </details>
+
+* Or use the old `make_old.bat` under [developer command prompt](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160#developer_command_prompt_shortcuts)...
+
+    <details><summary><ins>Click here to expand!</ins></summary>
+
+    If you don't want to use [developer command prompt](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160#developer_command_prompt_shortcuts), simply set `cl.exe` path in your system path variable; for example, MS VS2019 Enterprise:
+    ```
+    C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.xx.xxxxx\bin\Hostx64\x64\
+    ```
+    Build DCNv2 `_ext`:
+    ```
+    cd DCNv2
+    make_old.bat
+    ```
+    </details>
+
+## Credit to [origin repo](https://github.com/CharlesShang/DCNv2) & special thanks to:
+
+- https://github.com/tteepe/DCNv2
+- @[daiKratos](https://github.com/daiKratos)
+- @[haruishi43](https://github.com/haruishi43)

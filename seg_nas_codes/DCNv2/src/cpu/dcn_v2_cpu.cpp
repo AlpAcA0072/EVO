@@ -1,21 +1,22 @@
 #include <vector>
-#include "cpu/dcn_v2_im2col_cpu.h"
+#include "dcn_v2_im2col_cpu.h"
 #include <iostream>
 
 #include <ATen/ATen.h>
-//#include <ATen/cuda/CUDAContext.h>
+// #include <ATen/cuda/CUDAContext.h>
 
-#include <TH/TH.h>
-//#include <THC/THCAtomics.cuh>
-//#include <THC/THCDeviceUtils.cuh>
+// #include <TH/TH.h>
+// #include <THC/THCAtomics.cuh>
+// #include <THC/THCDeviceUtils.cuh>
+// For pytorch 1.11+ 
+// https://github.com/pytorch/pytorch/pull/69041 
+// MOD by rathaROG
 
-//extern THCState *state;
+// extern THCState *state;
 
 // author: Charles Shang
 // https://github.com/torch/cunn/blob/master/lib/THCUNN/generic/SpatialConvolutionMM.cu
-
 // modified from the CUDA version for CPU use by Daniel K. Suhendro
-
 // edit by: James Bockman and Matthew Howe
 // modified for torch implementation to remove use of deprecated torch access to Blas
 
@@ -77,7 +78,7 @@ dcn_v2_cpu_forward(const at::Tensor &input,
         auto offset_n = offset.select(0, b);
         auto mask_n = mask.select(0, b);
         auto output_n = output.select(0, b);
-        // std::cout << "output_n: " << output_n << "output.select(0,b): " << output.select(0,b) << "\n"; 
+        // std::cout << "output_n: " << output_n << "output.select(0,b): " << output.select(0,b) << "\n";
 
         // Do Bias first:
         // M,N,K are dims of matrix A and B
@@ -123,8 +124,11 @@ std::vector<at::Tensor> dcn_v2_cpu_backward(const at::Tensor &input,
                                              int deformable_group)
 {
 
-    THArgCheck(input.is_contiguous(), 1, "input tensor has to be contiguous");
-    THArgCheck(weight.is_contiguous(), 2, "weight tensor has to be contiguous");
+    // THArgCheck(input.is_contiguous(), 1, "input tensor has to be contiguous");
+    // THArgCheck(weight.is_contiguous(), 2, "weight tensor has to be contiguous");
+    // https://github.com/pytorch/pytorch/pull/69041 
+    TORCH_CHECK_ARG(input.is_contiguous(), 1, "input tensor has to be contiguous");
+    TORCH_CHECK_ARG(weight.is_contiguous(), 2, "weight tensor has to be contiguous");
 
     /*AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
     AT_ASSERTM(weight.type().is_cuda(), "weight must be a CUDA tensor");
@@ -173,8 +177,6 @@ std::vector<at::Tensor> dcn_v2_cpu_backward(const at::Tensor &input,
         auto grad_offset_n = grad_offset.select(0, b);
         auto grad_mask_n = grad_mask.select(0, b);
 
-
-
         // Torch implementation
         auto weight_flat = weight.view({channels_out, channels*kernel_h*kernel_w});
         weight_flat = at::transpose(weight_flat, 1, 0);
@@ -215,7 +217,6 @@ std::vector<at::Tensor> dcn_v2_cpu_backward(const at::Tensor &input,
         // Torch implementation
         auto product = at::matmul(grad_output_n_flat, at::transpose(columns, 1, 0));
         grad_weight = at::add(grad_weight, product.view({channels_out, channels, kernel_h, kernel_w}));
-
 
         // Torch implementation
         auto ones_flat = ones.view({height_out*width_out});

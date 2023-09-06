@@ -237,7 +237,7 @@ if __name__ == '__main__':
     # ofa_network.cuda()
 
     # construct the search space
-    from search.search_space import BasicSearchSpace
+    from search_space import BasicSearchSpace
     search_space = BasicSearchSpace()
 
     # # ---------------------------- Bottleneck search space ---------------------------- #

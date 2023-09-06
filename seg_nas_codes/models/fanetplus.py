@@ -212,8 +212,10 @@ class FeatureAlign(nn.Module):
         self.upsample = upsample
         # feature alignment
         self.offset = ConvBNReLU(out_nc * 2, out_nc, 1, 1, 0)
+        # self.dcpack_L2 = DCN(out_nc, out_nc, 3, stride=1, padding=1, dilation=1,
+        #                      deformable_groups=8, extra_offset_mask=True)
         self.dcpack_L2 = DCN(out_nc, out_nc, 3, stride=1, padding=1, dilation=1,
-                             deformable_groups=8, extra_offset_mask=True)
+                             deformable_groups=8)
         self.relu = nn.ReLU(inplace=True)
         # feature fusion
         self.fusion = ConvBNReLU(out_nc*2, out_nc, ks=1, stride=1, padding=0)
