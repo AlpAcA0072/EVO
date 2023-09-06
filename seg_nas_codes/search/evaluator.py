@@ -114,6 +114,7 @@ class OFAFANetEvaluator(ABC):
 
         # create dummy data for measuring flops
         dummy_data = torch.rand(*self.input_size)
+        print(dummy_data.shape)
 
         batch_mIoU, batch_params, batch_flops, batch_latency = [], [], [], []
         for i, subnet_str in enumerate(subnets):
@@ -125,10 +126,13 @@ class OFAFANetEvaluator(ABC):
             subnet = self.supernet.get_active_subnet(preserve_weight=True)
             subnet.cuda()
 
+            
             # compute mean IoU
-            mIoU = self.eval_mIoU(subnet, self.input_size[-2:], self.dl, self.sdl, self.num_classes)
+            mIoU = []
+            # mIoU = self.eval_mIoU(subnet, self.input_size[-2:], self.dl, self.sdl, self.num_classes)
             # calculate #params and #flops
             params = self._calc_params(subnet)
+            # TODO: flops打表
             flops = self._calc_flops(subnet, dummy_data)
 
             batch_mIoU.append(mIoU)
@@ -255,11 +259,11 @@ if __name__ == '__main__':
     # search_space = BottleneckSearchSpace()
 
     # construct the evaluator
-    # evaluator = CityscapesEvaluator(ofa_network,
-    #                                 data_root='/home/cseadmin/datasets/Cityscapes/', scale=0.5)
+    evaluator = CityscapesEvaluator(ofa_network,
+                                    data_root='F:\\EVO\\data\\cityscapes\\leftImg8bit_trainvaltest', scale=0.5)
 
-    evaluator = CamVidEvaluator(ofa_network,
-                                data_root='/home/cseadmin/datasets/CamVid/', scale=1.0)
+    # evaluator = CamVidEvaluator(ofa_network,
+    #                             data_root='/home/cseadmin/datasets/CamVid/', scale=1.0)
 
     subnets = search_space.sample(5)
 

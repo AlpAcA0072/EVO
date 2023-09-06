@@ -116,6 +116,11 @@ class DCN(DCNv2):
         self.conv_offset_mask.bias.data.zero_()
 
     def forward(self, input):
+        # dont know what happend.
+        for ele in input:
+            print(ele.shape)
+        # out = self.conv_offset_mask(input[0])
+        # originla code
         out = self.conv_offset_mask(input)
         o1, o2, mask = torch.chunk(out, 3, dim=1)
         offset = torch.cat((o1, o2), dim=1)

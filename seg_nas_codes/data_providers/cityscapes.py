@@ -53,8 +53,8 @@ class CityScapes(Dataset):
         self.mode = mode
         # print('self.mode', self.mode)
         self.ignore_lb = 255
-
-        with open('./data_providers/cityscapes_info.json', 'r') as fr:
+        file_path = os.path.join(os.path.dirname(__file__), 'cityscapes_info.json')
+        with open(file_path, 'r') as fr:
             labels_info = json.load(fr)
         self.lb_map = {el['id']: el['trainId'] for el in labels_info}
 
@@ -73,7 +73,7 @@ class CityScapes(Dataset):
         gtnames = []
         gtpth = osp.join(rootpth, 'gtFine', mode)
         lbnames = os.listdir(gtpth)
-        lbnames = [el for el in lbnames if 'labelIds' in el]
+        # lbnames = [el for el in lbnames if 'labelIds' in el]
         names = [el.replace('_gtFine_labelIds.png', '') for el in lbnames]
         lbpths = [osp.join(gtpth, el) for el in lbnames]
         gtnames.extend(names)
