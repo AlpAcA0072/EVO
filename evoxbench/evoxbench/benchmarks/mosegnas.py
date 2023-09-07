@@ -306,7 +306,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
 
     # latency \ mIoU 
-    # TODO: 预测的值不符合预期
+    # TODO: latency重训搞定了，mIoU需要重训
     def surrogate_predictor(self, subnet, pretrained_predictor):
         pretrained_list = json.load(open(pretrained_predictor, 'r'))
         list = []
@@ -335,7 +335,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
             # 打表
             if 'params' or 'flops' in objs:
                 pred['params'] = self.addup_predictor(subnet = subnet)
-
             # surrogate model
             if 'latency' in objs:
                 pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained)

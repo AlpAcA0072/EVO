@@ -286,14 +286,13 @@ if __name__ == '__main__':
             for ele in poss:
                 current_ratio = np.zeros(13)    
                 current_width = np.zeros(6)
-                current_width[5] = 2
                 for j in range(depth_list[i]):
                     current_ratio[j + idx_base] = ele[j]
                 for j in range(3):
                     current_width[i + 1] = j
-                current_width[0] = current_width[1]
-                counter += 1
-                subnets.append({"d" : list(current_depth.astype(int)), "e": list(current_ratio), "w": list(current_width.astype(int))})
+                    current_width[0] = current_width[1]
+                    counter += 1
+                    subnets.append({"d" : list(current_depth.astype(int)), "e": list(current_ratio), "w": list(current_width.astype(int))})
         else: current_depth[i] = 0
     print("total number of sampled subnets: {}", counter)
 
@@ -301,9 +300,8 @@ if __name__ == '__main__':
     with open("ofa_fanet_plus_rtx_params_flops.json", 'w') as f:
         for i in range(len(subnets)):
             config = subnets[i]
-            config
             params = batch_params[i] * 1e6
-            flops = batch_flops[i] * 1e10
+            flops = batch_flops[i] * 1e9
             f.write("{{\"config\":{}, \"params\":{}, \"flops\":{}}},\n".format(config, params, flops))
             # f.flush()
 
