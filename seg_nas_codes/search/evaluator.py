@@ -128,7 +128,7 @@ class OFAFANetEvaluator(ABC):
 
             
             # compute mean IoU
-            mIoU = []
+            mIoU = 0.0
             # mIoU = self.eval_mIoU(subnet, self.input_size[-2:], self.dl, self.sdl, self.num_classes)
             # calculate #params and #flops
             params = self._calc_params(subnet)
@@ -140,9 +140,10 @@ class OFAFANetEvaluator(ABC):
             batch_flops.append(flops)
 
             if report_latency:
-                latency = self._measure_latency(subnet)
+                latency = 1.0
+                # latency = self._measure_latency(subnet)
                 batch_latency.append(latency)
-                print("mIoU = {:.4f}, Params = {:.2f}M, FLOPs = {:.2f}, FPS = {:d}".format(
+                print("mIoU = {:.4f}, Params = {:.2f}M , FLOPs = {:.2f}G, FPS = {:d}".format(
                     mIoU, params, flops, int(1000 / latency)))
             else:
                 print("mIoU = {:.4f}, Params = {:.2f}M, FLOPs = {:.2f}".format(mIoU, params, flops))
@@ -241,6 +242,7 @@ if __name__ == '__main__':
     # ofa_network.cuda()
 
     # construct the search space
+    import numpy as np
     from search_space import BasicSearchSpace
     search_space = BasicSearchSpace()
 
@@ -267,5 +269,41 @@ if __name__ == '__main__':
 
     subnets = search_space.sample(5)
 
-    batch_mIoU, batch_params, batch_flops, _ = evaluator.evaluate(subnets, report_latency=True)
+    from itertools import product
+    subnets = []
+    depth_list = [2, 2, 3, 4, 2] # SUM = 13
+    expand_ratio_list = [0.2, 0.25, 0.35]
+    width_mult_list = [2, 2, 2, 2, 2] # 第一位不影响结果
+    # width_mult_list = [2, 2, 2, 2, 2, 2]
+
+    current_depth = np.zeros(5)
+    counter = 0
+    for i in range(len(depth_list)):
+        while current_depth[i] < depth_list[i]:
+            current_depth[i] += 1
+            idx_base = int(np.sum(depth_list[0:i]))
+            poss = list(product(expand_ratio_list, repeat = depth_list[i]))
+            for ele in poss:
+                current_ratio = np.zeros(13)    
+                current_width = np.zeros(6)
+                current_width[5] = 2
+                for j in range(depth_list[i]):
+                    current_ratio[j + idx_base] = ele[j]
+                for j in range(3):
+                    current_width[i + 1] = j
+                current_width[0] = current_width[1]
+                counter += 1
+                subnets.append({"d" : list(current_depth.astype(int)), "e": list(current_ratio), "w": list(current_width.astype(int))})
+        else: current_depth[i] = 0
+    print("total number of sampled subnets: {}", counter)
+
+    _, batch_params, batch_flops, _ = evaluator.evaluate(subnets, report_latency=True)
+    with open("ofa_fanet_plus_rtx_params_flops.json", 'w') as f:
+        for i in range(len(subnets)):
+            config = subnets[i]
+            config
+            params = batch_params[i] * 1e6
+            flops = batch_flops[i] * 1e10
+            f.write("{{\"config\":{}, \"params\":{}, \"flops\":{}}},\n".format(config, params, flops))
+            # f.flush()
 

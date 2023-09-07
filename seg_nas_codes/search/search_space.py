@@ -119,8 +119,10 @@ class BasicSearchSpace(OFAFANetSearchSpace):
         #  (expand ratio)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
         #  (width mult)2, 2, 2, 0, 0]
         # both 'd' and 'w' are in subnet string format already, we just need to decode 'e'
-        e = [self.expand_ratio_list[i] for i in x[4:-5]]
-        return {'d': x[:4].tolist(), 'e': e, 'w': x[-5:].tolist()}
+        e = [self.expand_ratio_list[i] for i in x[5:-6]]
+        return {"d": x[:5].tolist(), "e": e, "w": x[-6:].tolist()}
+        # e = [self.expand_ratio_list[i] for i in x[4:-5]]
+        # return {'d': x[:4].tolist(), 'e': e, 'w': x[-5:].tolist()}
 
     def _features(self, X):
         # X should be a 2D matrix with each row being a decision variable vector
@@ -161,7 +163,6 @@ class BottleneckSearchSpace(OFAFANetSearchSpace):
 
     def _sample(self, subnet_str=True):
         x = np.array([random.choice(options) for options in self.categories])
-        # x[0] =
         x[-5] = x[-6]  # ad-hoc fix to make sure the first two stem width mult are the same TODO FIXME
         if subnet_str:
             return self._decode(x)
@@ -183,8 +184,8 @@ class BottleneckSearchSpace(OFAFANetSearchSpace):
         #  (expand ratio)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
         #  (width mult)2, 2, 2, 0, 0]
         # both 'd' and 'w' are in subnet string format already, we just need to decode 'e'
-        e = [self.expand_ratio_list[i] for i in x[4:-6]]
-        return {'d': x[:5].tolist(), 'e': e, 'w': x[-6:].tolist()}
+        e = [self.expand_ratio_list[i] for i in x[5:-6]]
+        return {"d": x[:6].tolist(), "e": e, "w": x[-6:].tolist()}
 
     def _features(self, X):
         # X should be a 2D matrix with each row being a decision variable vector

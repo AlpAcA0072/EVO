@@ -260,6 +260,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
     def __init__(self,
                 surrogate_pretrained_list = None,
                 pretrained_json = None,
+                lookup_table = None,
                 **kwargs):
         super().__init__()
         # [(depth/layers)1, 3, 0, 1,
@@ -337,7 +338,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
             # surrogate model
             if 'latency' in objs:
-                # if 
                 pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained)
             if 'mIoU' in objs:
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained)
