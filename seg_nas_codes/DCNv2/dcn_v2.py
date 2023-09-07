@@ -103,6 +103,7 @@ class DCN(DCNv2):
                                   kernel_size, stride, padding, dilation, deformable_groups)
 
         channels_ = self.deformable_groups * 3 * self.kernel_size[0] * self.kernel_size[1]
+        # in_channels = out_nc, channels_ = deformable_groups(8) * 3 * 3 * 3, kernel_size = (3, 3)
         self.conv_offset_mask = nn.Conv2d(self.in_channels,
                                           channels_,
                                           kernel_size=self.kernel_size,
@@ -116,11 +117,8 @@ class DCN(DCNv2):
         self.conv_offset_mask.bias.data.zero_()
 
     def forward(self, input):
-        # dont know what happend.
-        for ele in input:
-            print(ele.shape)
-        # out = self.conv_offset_mask(input[0])
-        # originla code
+        # for ele in input:
+        #     print(ele.shape)
         out = self.conv_offset_mask(input)
         o1, o2, mask = torch.chunk(out, 3, dim=1)
         offset = torch.cat((o1, o2), dim=1)

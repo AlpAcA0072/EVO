@@ -114,7 +114,7 @@ class OFAFANetEvaluator(ABC):
 
         # create dummy data for measuring flops
         dummy_data = torch.rand(*self.input_size)
-        print(dummy_data.shape)
+        # print(dummy_data.shape)
 
         batch_mIoU, batch_params, batch_flops, batch_latency = [], [], [], []
         for i, subnet_str in enumerate(subnets):

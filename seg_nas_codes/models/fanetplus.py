@@ -241,6 +241,7 @@ class FeatureAlign(nn.Module):
         return wd_params, nowd_params
 
     def forward(self, feat_l, feat_s):
+        # print(feat_l.shape, feat_s.shape)
         HW = feat_l.size()[2:]
         # selected features
         feat_arm = self.fsm(feat_l)  # 0~1 * feats
@@ -248,9 +249,15 @@ class FeatureAlign(nn.Module):
         feat_up = self.upsample(feat_s, HW)
         # aligned features
         offset = self.offset(torch.cat([feat_arm, feat_up * 2], dim=1))  # concat for offset by compute the dif
-        feat_align = self.relu(self.dcpack_L2([feat_up, offset]))  # [feat, offset]
+        # print(feat_up.shape, offset.shape)
+        DCN_result = self.dcpack_L2(torch.add(feat_up, offset)) # [feat + offset]
+        # DCN_result = self.dcpack_L2([feat_up, offset]) # [feat, offset]
+        feat_align = self.relu(DCN_result)
         # fused features
-        feat = self.fusion(torch.cat([feat_arm, feat_align], dim=1))
+        # print(feat_arm.shape, feat_align.shape)
+        feat = torch.cat([feat_arm, feat_align], dim=1)
+        # print(feat.shape)
+        feat = self.fusion(feat)
         return feat
 
 
