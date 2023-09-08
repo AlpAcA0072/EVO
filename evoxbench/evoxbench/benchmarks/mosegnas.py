@@ -39,6 +39,7 @@ class MoSegNASSearchSpace(SearchSpace):
 
         #choice of the layer except input stem
         self.expand_ratio_list = [0.2, 0.25, 0.35]
+        self.width_list = [2, 2, 2, 2, 2]
 
         # d e w
         self.categories = [list(range(d + 1)) for d in self.depth_list]
@@ -121,7 +122,7 @@ class MoSegNASEvaluator(Evaluator):
         self.surrogate_pretrained_list = surrogate_pretrained_list
 
         self.feature_encoder = MoSegNASSearchSpace()
-        self.surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.surrogate_pretrained_list)
+        self.surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.surrogate_pretrained_list, categories=self.feature_encoder.categories)
         
     @property
     def name(self):
@@ -261,13 +262,14 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 surrogate_pretrained_list = None,
                 pretrained_json = None,
                 lookup_table = None,
+                categories = [list(range(4))] * 24,
                 **kwargs):
         super().__init__()
-        # [(depth/layers)1, 3, 0, 1,
-        #  (expand ratio/area of the layer)1, 0, 1, 1, 2, 0, 2, 0, 1, 2, 1, 0, 1, 2, 2, 0,
-        #  (width mult/channels)2, 2, 2, 0, 0]
 
         self.pretrained_result = pretrained_json
+        self.lookup_table = lookup_table
+        self.categories = categories
+        self.searchSpace = MoSegNASSearchSpace()
 
         # 10个model，取均值
         if 'latency' in surrogate_pretrained_list:
@@ -283,7 +285,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
         return 'MoSegNASSurrogateModel'
 
     def fit(self, subnet):
-        # TODO
         # subnet = [{'d': [...], 'e': [...], 'w': [...]}]
         # self.pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': 2762960, 'flops': 6400445327, 'latency': 4.957451937742715, 'FPS': 201.71652949102148, 'mIoU': 0.6482}, {...}, {...}]
         """ method to perform forward in a surrogate model from data """
@@ -292,12 +293,37 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 config = result['config']
                 if all(key in config and config[key] == value for key, value in subnet[0].items()):
                     return [result['params'], result['flops'], result['latency'], result['mIoU']]
-        # 不存在时直接返回空值 or ？
+        # TODO: 不存在时直接返回空值 or ？
         return None
 
-    def addup_predictor(self):
+    def addup_predictor(self, subnet):
         # params & flops
-        pass
+        lookup_table = json.load(open(self.lookup_table, 'r'))
+        d_len = len(self.searchSpace.depth_list)
+        w_len = len(self.searchSpace.width_list)
+        e_len = len(self.searchSpace.categories) - d_len - w_len
+        
+        depth = subnet[:d_len]
+        expand_ratio = subnet[d_len:d_len + e_len]
+        width = subnet[e_len+d_len:]
+
+        params, flops = 0.0, 0.0
+        for idx in range(len(depth)):
+            if depth[idx] != 0:
+                d = [0 for _ in range(d_len)]
+                w = [0 for _ in range(w_len)]
+                e = [0 for _ in range(e_len)]
+                d[idx] = depth[idx]
+                previous = sum(self.searchSpace.depth_list[0:idx])
+                e[previous:previous+idx] = expand_ratio[previous:previous+idx]
+                w[idx]= width[idx]
+                parted_subnet = {'d':d, 'e':e, 'w':w}
+                for ele in lookup_table:
+                    if all(key in ele['config'] and ele['config'][key] == value for key, value in parted_subnet.items()):
+                        params += lookup_table['params']
+                        flops += lookup_table['flops']
+
+        return params, flops
 
 
     def real_predictor(self):
@@ -308,6 +334,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
     # latency \ mIoU 
     # TODO: latency重训搞定了，mIoU需要重训
     def surrogate_predictor(self, subnet, pretrained_predictor):
+        subnet = self.searchSpace._one_hot_encode(subnet)
         pretrained_list = json.load(open(pretrained_predictor, 'r'))
         list = []
         model_list = []
@@ -346,6 +373,8 @@ class MoSegNASSurrogateModel(SurrogateModel):
             if 'err' in objs:
                 pred['acc'] = self.real_predictor(subnet = subnet)
         else:
-            pred['params'], pred['flops'], pred['latency'], pred['mIoU'] = self.fit(subnet = subnet)
+            try:
+                pred['params'], pred['flops'], pred['latency'], pred['mIoU'] = self.fit(subnet = subnet)
+            except: raise Exception('No result found!')
         
         return pred

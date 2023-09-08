@@ -52,11 +52,11 @@ searchSpace = MoSegNASSearchSpace(subnet_str=True)
 # randomSubnet = searchSpace.sample(n_samples=1)
 randomSubnet = [{
             "d": [
+                1,
                 0,
                 0,
                 0,
-                0,
-                1
+                0
             ],
             "e": [
                 0.2,
@@ -74,7 +74,7 @@ randomSubnet = [{
                 0.25
             ],
             "w": [
-                1,
+                0,
                 0,
                 0,
                 1,
@@ -118,13 +118,22 @@ randomSubnet = [{
 
 # surrogate_pretrained_list = {'latency': 'F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_latency.json'}
 surrogate_pretrained_list = {'latency': 'F:\\EVO\\ranknet_latency.json'}
-surrogateModel = MoSegNASSurrogateModel(surrogate_pretrained_list=surrogate_pretrained_list)
+depth_list = [2, 2, 3, 4, 2]
+expand_ratio_list = [0.2, 0.25, 0.35]
+categories = [list(range(d + 1)) for d in depth_list]
+categories += [list(range(3))] * 13
+categories += [list(range(3))] * 6
+lookup_table = 'F:\EVO\data\moseg\ofa_fanet_plus_rtx_params_flops.json'
+surrogateModel = MoSegNASSurrogateModel(surrogate_pretrained_list=surrogate_pretrained_list, lookup_table =lookup_table,categories = categories)
 
+
+#TODO
 subnet = searchSpace._encode(randomSubnet[0])
-subnet = searchSpace._one_hot_encode(subnet)
-latency = surrogateModel.surrogate_predictor(
-    subnet=subnet,
-    pretrained_predictor=surrogate_pretrained_list['latency']
-)
+params, flops = surrogateModel.addup_predictor(subnet=subnet)
+print(params, flops)
+# latency = surrogateModel.surrogate_predictor(
+#     subnet=subnet,
+#     pretrained_predictor=surrogate_pretrained_list['latency']
+# )
 
-print(latency)
+# print(latency)
