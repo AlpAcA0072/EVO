@@ -10,8 +10,9 @@ from evoxbench.modules import SearchSpace, Evaluator, Benchmark, SurrogateModel
 
 LOWER_BOUND = -1
 UPPER_BOUND = 1
-MIN_VALUE_IN_DATASET = 1.5595920924939386
-Max_VALUE_IN_DATASET = 2.206984236920299
+MIN_VALUE_OF_DATASET = [1.5595920924939386, -3.270169119255751]
+MAX_VALUE_OF_DATASET = [2.206984236920299, -0.3437587186721861]
+
 
 # from mosegnas.models import MoSegNASResult  # has to be imported after the init method
 
@@ -336,8 +337,13 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
 
     # latency \ mIoU 
-    # TODO: latency重训搞定了，mIoU需要重训
-    def surrogate_predictor(self, subnet, pretrained_predictor):
+    def surrogate_predictor(self, subnet, pretrained_predictor, objs):
+        if 'latency' in objs:
+            MAX_VALUE = MAX_VALUE_OF_DATASET[0]
+            MIN_VALUE = MIN_VALUE_OF_DATASET[0]
+        else:
+            MAX_VALUE = MAX_VALUE_OF_DATASET[1]
+            MIN_VALUE = MIN_VALUE_OF_DATASET[1]
         subnet = self.searchSpace._one_hot_encode(subnet)
         pretrained_list = json.load(open(pretrained_predictor, 'r'))
         list = []
@@ -353,7 +359,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
         for model in model_list:
             result_list = model.forward(subnet)
-            original_data = (np.array(result_list) - LOWER_BOUND) * (Max_VALUE_IN_DATASET - MIN_VALUE_IN_DATASET) / (UPPER_BOUND - LOWER_BOUND) + MIN_VALUE_IN_DATASET
+            original_data = (np.array(result_list) - LOWER_BOUND) * (MAX_VALUE - MIN_VALUE) / (UPPER_BOUND - LOWER_BOUND) + MIN_VALUE
             original_data = np.exp(original_data)
             result += sum(original_data)/len(original_data)
         return result / len(model_list)
@@ -368,9 +374,9 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 pred['params'] = self.addup_predictor(subnet = subnet)
             # surrogate model
             if 'latency' in objs:
-                pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained)
+                pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained, objs = 'latency')
             if 'mIoU' in objs:
-                pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained)
+                pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained, objs = 'mIoU')
             
 
             # # 实测

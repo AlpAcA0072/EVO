@@ -324,8 +324,8 @@ if __name__ == '__main__':
     features = search_space.features(search_space.encode(subnet_str))
 
     # y
-    # targets = np.array([d['mIoU'] for d in meta_data])
-    targets = np.array([d['latency'] for d in meta_data])
+    targets = np.array([d['mIoU'] for d in meta_data])
+    # targets = np.array([d['latency'] for d in meta_data])
 
     # MIN-MAX Normalize
     targets = np.log(targets)
@@ -348,7 +348,7 @@ if __name__ == '__main__':
 
     state_dicts = []
     # latency
-    state_dicts = torch.load('F:\\EVO\\ranknet_latency.pth', map_location='cpu')
+    # state_dicts = torch.load('F:\\EVO\\ranknet_latency.pth', map_location='cpu')
 
     # miou
     # state_dicts = torch.load('F:\\EVO\\data\\moseg\\pretrained\\surrogate_model\\ranknet_mIoU.pth', map_location='cpu')
@@ -360,10 +360,10 @@ if __name__ == '__main__':
         predictor = RankNet(loss='rank', epochs=300, device='cpu')
 
         # no pretrained model
-        # predictor.fit(train_inputs[train_split, :], train_targets[train_split])
+        predictor.fit(train_inputs[train_split, :], train_targets[train_split])
 
         # pretrained
-        predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
+        # predictor.fit(train_inputs[train_split, :], train_targets[train_split], pretrained=state_dicts[i])
 
         
         pred = predictor.predict(train_inputs[test_split, :])
@@ -400,7 +400,8 @@ if __name__ == '__main__':
         rmse, r, rho, tau))
 
     # save
-    torch.save(state_dicts, "ranknet_latency.pth")
+    torch.save(state_dicts, "ranknet_mIoU.pth")
+    # torch.save(state_dicts, "ranknet_latency.pth")
     print(min_value, max_value, min_range, max_range)
     with open('mean_std.txt', 'w') as f:
         f.write(min_value, max_value, min_range, max_range)
