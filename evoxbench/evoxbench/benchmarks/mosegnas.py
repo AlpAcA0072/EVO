@@ -8,10 +8,10 @@ import itertools
 
 from evoxbench.modules import SearchSpace, Evaluator, Benchmark, SurrogateModel
 
-min_range = -1
-max_range = 1
-min_value = 1.5595920924939386
-max_value = 2.206984236920299
+LOWER_BOUND = -1
+UPPER_BOUND = 1
+MIN_VALUE_IN_DATASET = 1.5595920924939386
+Max_VALUE_IN_DATASET = 2.206984236920299
 
 # from mosegnas.models import MoSegNASResult  # has to be imported after the init method
 
@@ -39,7 +39,7 @@ class MoSegNASSearchSpace(SearchSpace):
 
         #choice of the layer except input stem
         self.expand_ratio_list = [0.2, 0.25, 0.35]
-        self.width_list = [2, 2, 2, 2, 2]
+        self.width_list = [2, 2, 2, 2, 2, 2]
 
         # d e w
         self.categories = [list(range(d + 1)) for d in self.depth_list]
@@ -131,7 +131,8 @@ class MoSegNASEvaluator(Evaluator):
     def evaluate(self, 
                  archs, # archs = subnets
                  true_eval = False, # true_eval = if evaluate based on data or true inference result
-                 objs='err&params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
+                #  objs='err&params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
+                 objs='params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
                  **kwargs):
         """ evalute the performance of the given subnets """
         batch_stats = []
@@ -145,8 +146,8 @@ class MoSegNASEvaluator(Evaluator):
                                                    objs = objs)
             # objs='err&params&flops&latency&FPS&mIoU'
 
-            if 'err' in objs:
-                pred['err'] = 1 - pred['acc']
+            # if 'err' in objs:
+            #     pred['err'] = 1 - pred['acc']
             if 'FPS' in objs:
                 pred['FPS'] = 1000.0 / pred['latency']
             batch_stats.append(pred)
@@ -305,6 +306,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
         
         depth = subnet[:d_len]
         expand_ratio = subnet[d_len:d_len + e_len]
+        expand_ratio = [self.searchSpace.expand_ratio_list[i] for i in expand_ratio]
         width = subnet[e_len+d_len:]
 
         params, flops = 0.0, 0.0
@@ -312,16 +314,18 @@ class MoSegNASSurrogateModel(SurrogateModel):
             if depth[idx] != 0:
                 d = [0 for _ in range(d_len)]
                 w = [0 for _ in range(w_len)]
-                e = [0 for _ in range(e_len)]
+                e = [0.0 for _ in range(e_len)]
                 d[idx] = depth[idx]
                 previous = sum(self.searchSpace.depth_list[0:idx])
-                e[previous:previous+idx] = expand_ratio[previous:previous+idx]
+                length = self.searchSpace.depth_list[idx]
+                e[previous:previous+length] = expand_ratio[previous:previous+length]
                 w[idx]= width[idx]
                 parted_subnet = {'d':d, 'e':e, 'w':w}
                 for ele in lookup_table:
+                    print(parted_subnet.items())
                     if all(key in ele['config'] and ele['config'][key] == value for key, value in parted_subnet.items()):
-                        params += lookup_table['params']
-                        flops += lookup_table['flops']
+                        params += float(ele['params'])
+                        flops += float(ele['flops'])
 
         return params, flops
 
@@ -349,7 +353,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
         for model in model_list:
             result_list = model.forward(subnet)
-            original_data = (np.array(result_list) - min_range) * (max_value - min_value) / (max_range - min_range) + min_value
+            original_data = (np.array(result_list) - LOWER_BOUND) * (Max_VALUE_IN_DATASET - MIN_VALUE_IN_DATASET) / (UPPER_BOUND - LOWER_BOUND) + MIN_VALUE_IN_DATASET
             original_data = np.exp(original_data)
             result += sum(original_data)/len(original_data)
         return result / len(model_list)
@@ -369,9 +373,9 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained)
             
 
-            # 实测
-            if 'err' in objs:
-                pred['acc'] = self.real_predictor(subnet = subnet)
+            # # 实测
+            # if 'err' in objs:
+            #     pred['acc'] = self.real_predictor(subnet = subnet)
         else:
             try:
                 pred['params'], pred['flops'], pred['latency'], pred['mIoU'] = self.fit(subnet = subnet)
