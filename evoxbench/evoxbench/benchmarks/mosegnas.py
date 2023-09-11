@@ -60,7 +60,6 @@ class MoSegNASSearchSpace(SearchSpace):
             return x
     
     def _encode(self, subnet_str):
-        # subnet_str只包括config部分不包括params部分
         e = [np.where(_e == np.array(self.expand_ratio_list))[0][0] for _e in subnet_str['e']]
         return subnet_str['d'] + e + subnet_str['w']
     
@@ -80,10 +79,6 @@ class MoSegNASSearchSpace(SearchSpace):
 
         return encoded_sample
 
-        
-        
-
-    
     def visualize(self):
         """ method to visualize an architecture """
         raise NotImplementedError            
@@ -141,11 +136,11 @@ class MoSegNASEvaluator(Evaluator):
         for index, subnet_encoded in enumerate(archs):
             print("evaluating subnet index {}, subnet {}:".format(index, subnet_encoded))
 
-            # pred contains err&params&flops at most
+            # pred contains params&flops at most
             pred = self.surrogate_model.predict(subnet = subnet_encoded,
                                                    true_eval = true_eval, 
                                                    objs = objs)
-            # objs='err&params&flops&latency&FPS&mIoU'
+            # objs='params&flops&latency&FPS&mIoU'
 
             # if 'err' in objs:
             #     pred['err'] = 1 - pred['acc']
@@ -182,13 +177,11 @@ class MosegNASRankNet():
 
 
     def init_weights(self):
-        #根据self.pretrained初始化weights和biases
         for i in range (int(list(self.pretrained.keys())[0][1:]), len(self.pretrained) // 2 + int(list(self.pretrained.keys())[0][1:])):
             self.weights.append(self.pretrained['W' + str(i)])
             self.biases.append(self.pretrained['b' + str(i)])
     
     def randomly_init_weights(self, x):
-        # 随机初始化weights和bias
         self.n_feature = x.shape[1]
 
         #Input layer
@@ -295,7 +288,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 config = result['config']
                 if all(key in config and config[key] == value for key, value in subnet[0].items()):
                     return [result['params'], result['flops'], result['latency'], result['mIoU']]
-        # TODO: 不存在时直接返回空值 or ？
         return None
 
     def addup_predictor(self, subnet):
@@ -369,17 +361,14 @@ class MoSegNASSurrogateModel(SurrogateModel):
         pred = {}
 
         if true_eval:
-            # 打表
             if 'params' or 'flops' in objs:
                 pred['params'] = self.addup_predictor(subnet = subnet)
-            # surrogate model
             if 'latency' in objs:
                 pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained, objs = 'latency')
             if 'mIoU' in objs:
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained, objs = 'mIoU')
             
 
-            # # 实测
             # if 'err' in objs:
             #     pred['acc'] = self.real_predictor(subnet = subnet)
         else:
