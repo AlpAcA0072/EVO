@@ -125,9 +125,9 @@ class MoSegNASEvaluator(Evaluator):
         return 'MoSegNASEvaluator'
     
     def evaluate(self, 
-                 archs, # archs = subnets
-                 true_eval = False, # true_eval = if evaluate based on data or true inference result
-                #  objs='err&params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
+                 archs, # archs is subnets
+                 true_eval = False, # true_eval: if evaluate based on data or true inference result
+                #  objs='err&params&flops&latency&FPS&mIoU',
                  objs='params&flops&latency&FPS&mIoU', # objectives to be minimized/maximized
                  **kwargs):
         """ evalute the performance of the given subnets """
@@ -138,8 +138,8 @@ class MoSegNASEvaluator(Evaluator):
 
             # pred contains params&flops at most
             pred = self.surrogate_model.predict(subnet = subnet_encoded,
-                                                   true_eval = true_eval, 
-                                                   objs = objs)
+            true_eval = true_eval, 
+            objs = objs)
             # objs='params&flops&latency&FPS&mIoU'
 
             # if 'err' in objs:
@@ -266,7 +266,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
         self.categories = categories
         self.searchSpace = MoSegNASSearchSpace()
 
-        # 10个model，取均值
+        # 10 model
         if 'latency' in surrogate_pretrained_list:
             self.latency_pretrained = surrogate_pretrained_list['latency']
         if 'mIoU' in surrogate_pretrained_list:
@@ -281,7 +281,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
 
     def fit(self, subnet):
         # subnet = [{'d': [...], 'e': [...], 'w': [...]}]
-        # self.pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': 2762960, 'flops': 6400445327, 'latency': 4.957451937742715, 'FPS': 201.71652949102148, 'mIoU': 0.6482}, {...}, {...}]
+        # pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': ..., 'flops': ..., 'latency': ..., 'FPS': ..., 'mIoU': ...}, {...}, {...}]
         """ method to perform forward in a surrogate model from data """
         for result in self.pretrained_result:
             if 'config' in result and isinstance(result['config'], dict):
@@ -323,12 +323,12 @@ class MoSegNASSurrogateModel(SurrogateModel):
         return params, flops
 
 
-    def real_predictor(self):
-        # accs
-        pass
+    # def real_predictor(self):
+    #     # accs
+    #     pass
 
 
-    # latency \ mIoU 
+    # latency / mIoU 
     def surrogate_predictor(self, subnet, pretrained_predictor, objs):
         if 'latency' in objs:
             MAX_VALUE = MAX_VALUE_OF_DATASET[0]
@@ -368,7 +368,6 @@ class MoSegNASSurrogateModel(SurrogateModel):
             if 'mIoU' in objs:
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained, objs = 'mIoU')
             
-
             # if 'err' in objs:
             #     pred['acc'] = self.real_predictor(subnet = subnet)
         else:
