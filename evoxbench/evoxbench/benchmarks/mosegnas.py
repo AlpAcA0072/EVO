@@ -244,7 +244,7 @@ class MosegNASRankNet():
 
         return outputs
 
-    def train():
+    def train(self):
         pass
 
 class MoSegNASSurrogateModel(SurrogateModel):
@@ -362,6 +362,8 @@ class MoSegNASSurrogateModel(SurrogateModel):
                 pred['latency'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor= self.latency_pretrained, objs = 'latency')
             if 'mIoU' in objs:
                 pred['mIoU'] = self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained, objs = 'mIoU')
+            if 'err' in objs:
+                pred['err'] = 1 - self.surrogate_predictor(subnet = subnet, pretrained_predictor=self.mIoU_pretrained, objs = 'mIoU')
             
             # if 'err' in objs:
             #     pred['acc'] = self.real_predictor(subnet = subnet)
