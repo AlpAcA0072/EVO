@@ -118,7 +118,7 @@ class MoSegNASEvaluator(Evaluator):
         self.surrogate_pretrained_list = surrogate_pretrained_list
 
         self.feature_encoder = MoSegNASSearchSpace()
-        self.surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.surrogate_pretrained_list, categories=self.feature_encoder.categories)
+        self.surrogate_model = MoSegNASSurrogateModel(pretrained_weights=self.surrogate_pretrained_list, categories=self.feature_encoder.categories, lookup_table = pretrained_json)
         
     @property
     def name(self):
@@ -220,7 +220,6 @@ class MosegNASRankNet():
     def linear(self, inputs, weights, biases):
         return [sum(x * w for x, w in zip(inputs, weights_row)) + b for weights_row, b in zip(weights, biases)]
     
-
     def sigmoid(self, x):
         return 1 / (1 + math.exp(-x))
     
@@ -246,10 +245,6 @@ class MosegNASRankNet():
         return outputs
 
     def train():
-        pass
-
-class OFAFANetPlus():
-    def __init__(self) -> None:
         pass
 
 class MoSegNASSurrogateModel(SurrogateModel):
@@ -280,8 +275,8 @@ class MoSegNASSurrogateModel(SurrogateModel):
         return 'MoSegNASSurrogateModel'
 
     def fit(self, subnet):
-        # subnet = [{'d': [...], 'e': [...], 'w': [...]}]
-        # pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': ..., 'flops': ..., 'latency': ..., 'FPS': ..., 'mIoU': ...}, {...}, {...}]
+        """ subnet = [{'d': [...], 'e': [...], 'w': [...]}]
+            pretrained result = [{'config': {'d': [...], 'e': [...], 'w': [...]}, 'params': ..., 'flops': ..., 'latency': ..., 'FPS': ..., 'mIoU': ...}, {...}, {...} """
         """ method to perform forward in a surrogate model from data """
         for result in self.pretrained_result:
             if 'config' in result and isinstance(result['config'], dict):
@@ -291,7 +286,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
         return None
 
     def addup_predictor(self, subnet):
-        # params & flops
+        """ method to predict performance only for flops or params from given architecture features(subnets) """  
         lookup_table = json.load(open(self.lookup_table, 'r'))
         d_len = len(self.searchSpace.depth_list)
         w_len = len(self.searchSpace.width_list)
@@ -328,8 +323,8 @@ class MoSegNASSurrogateModel(SurrogateModel):
     #     pass
 
 
-    # latency / mIoU 
     def surrogate_predictor(self, subnet, pretrained_predictor, objs):
+        """ method to predict performance only for latency or mIoU from given architecture features(subnets) """        
         if 'latency' in objs:
             MAX_VALUE = MAX_VALUE_OF_DATASET[0]
             MIN_VALUE = MIN_VALUE_OF_DATASET[0]
@@ -357,7 +352,7 @@ class MoSegNASSurrogateModel(SurrogateModel):
         return result / len(model_list)
 
     def predict(self, subnet, true_eval, objs, **kwargs):
-        """ method to predict performance including acc&params&flops from given architecture features(subnets) """
+        """ method to predict performance from given architecture features(subnets) """
         pred = {}
 
         if true_eval:
