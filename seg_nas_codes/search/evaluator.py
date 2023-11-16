@@ -153,8 +153,7 @@ class OFAFANetEvaluator(ABC):
         file = open(os.path.join('/zhaoyifan/EVO/sampled_result/4090', 'ofa_fanet_plus_bottleneck_rtx_fps@0.5_4090.json'), 'w+')
         monitor = open(os.path.join('/zhaoyifan/EVO/sampled_result/4090', 'monitor.log'), 'w+')
         monitor.write("Total number of subnets: {}\n".format(len(data)))
-        # TODO: Arithmetic Intensity是怎么算的
-        monitor.write("index, intial latency, latency, memory utilization, energy consumption, GPU temperature, time, Arithmetic Intensity\n")
+        monitor.write("index, intial latency, latency, memory utilization, energy consumption, GPU temperature, time\n")
         monitor.flush()
         file.write("[\n")
 
