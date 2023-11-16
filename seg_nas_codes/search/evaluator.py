@@ -152,7 +152,9 @@ class OFAFANetEvaluator(ABC):
         
         file = open(os.path.join('/zhaoyifan/EVO/sampled_result', 'ofa_fanet_plus_bottleneck_rtx_fps@0.5_4090.json'), 'w+')
         monitor = open(os.path.join('/zhaoyifan/EVO/sampled_result', 'monitor.log'), 'w+')
-        monitor.write("intial latency, latency, memory utilization, energy consumption, GPU temperature\n")
+        monitor.write("Total number of subnets: {}\n".format(len(data)))
+        monitor.write("index, intial latency, latency, memory utilization, energy consumption, GPU temperature, time\n")
+        monitor.flush()
         file.write("[\n")
 
         batch_mIoU, batch_params, batch_flops, batch_latency = [], [], [], []
@@ -210,7 +212,7 @@ class OFAFANetEvaluator(ABC):
             file.write(",\n")
             file.flush()
 
-            monitor.write(str(subnet_all['latency'])+ " " + str(latency) + " " + str(util) + " " + str(consumption) + " " + str(temperature) + "\n")
+            monitor.write(str(i + 1) + " " + str(subnet_all['latency'])+ " " + str(latency) + " " + str(util) + " " + str(consumption) + " " + str(temperature) + " " + str(elapsed_time + time) +"\n")
             monitor.flush()
 
         file.write("\n]")

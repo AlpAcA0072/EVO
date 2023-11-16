@@ -75,7 +75,8 @@ def main(args):
 
 
     # re-evaluate the mIoU
-    data = json.load(open("/zhaoyifan/EVO/data/moseg/tmp.json", 'r'))
+    data = json.load(open("/zhaoyifan/EVO/data/moseg/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json", 'r'))
+    # data = json.load(open("/zhaoyifan/EVO/data/moseg/tmp.json", 'r'))
     idx = np.argsort([d['mIoU'] for d in data])
     data = [data[i] for i in idx[::-1]]
 
