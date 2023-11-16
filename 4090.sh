@@ -1,0 +1,1 @@
+nohup /opt/conda/envs/cv_torch/bin/python /zhaoyifan/EVO/seg_nas_codes/evaluate_supernet.py > /zhaoyifan/EVO/sampled_result/4090/command_output.log 2>&1 &

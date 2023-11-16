@@ -48,7 +48,7 @@ class OFAFANetEvaluator(ABC):
         return profile_macs(subnet, dummy_data) / 1e9  # in unit of GFLOPs
 
     @staticmethod
-    def measure_latency(subnet, input_size, iterations=None):
+    def measure_latency(subnet, input_size, iterations=2000):
         """ Be aware that latency will fluctuate depending on the hardware operating condition,
         e.g., loading, temperature, etc. """
 
@@ -150,10 +150,11 @@ class OFAFANetEvaluator(ABC):
 
         partial_name = name.split()[-1]
         
-        file = open(os.path.join('/zhaoyifan/EVO/sampled_result', 'ofa_fanet_plus_bottleneck_rtx_fps@0.5_4090.json'), 'w+')
-        monitor = open(os.path.join('/zhaoyifan/EVO/sampled_result', 'monitor.log'), 'w+')
+        file = open(os.path.join('/zhaoyifan/EVO/sampled_result/4090', 'ofa_fanet_plus_bottleneck_rtx_fps@0.5_4090.json'), 'w+')
+        monitor = open(os.path.join('/zhaoyifan/EVO/sampled_result/4090', 'monitor.log'), 'w+')
         monitor.write("Total number of subnets: {}\n".format(len(data)))
-        monitor.write("index, intial latency, latency, memory utilization, energy consumption, GPU temperature, time\n")
+        # TODO: Arithmetic Intensity是怎么算的
+        monitor.write("index, intial latency, latency, memory utilization, energy consumption, GPU temperature, time, Arithmetic Intensity\n")
         monitor.flush()
         file.write("[\n")
 
