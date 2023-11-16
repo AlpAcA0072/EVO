@@ -2,7 +2,7 @@ import copy
 import random
 from collections import OrderedDict
 
-import torch
+import torch 
 import torch.nn as nn
 
 from ofa.utils.layers import set_layer_from_config, IdentityLayer, ResidualBlock

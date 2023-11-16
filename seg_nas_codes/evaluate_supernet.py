@@ -11,6 +11,7 @@ import torch
 
 from supernet.ofa_fanetplus import OFAFANetPlus
 
+from psutil._common import bytes2human
 
 def main(args):
 
@@ -74,17 +75,16 @@ def main(args):
 
 
     # re-evaluate the mIoU
-    data = json.load(open("tmp.json", 'r'))
+    data = json.load(open("/zhaoyifan/EVO/data/moseg/tmp.json", 'r'))
     idx = np.argsort([d['mIoU'] for d in data])
     data = [data[i] for i in idx[::-1]]
 
-    subnets = [d['config'] for d in data]
-    batch_mIoU, _, _, batch_latency = evaluator.evaluate(subnets, report_latency=True)
+    # subnets = [d['config'] for d in data]
+    batch_mIoU, _, _, batch_latency, batch_util, batch_consumption, batch_temperature = evaluator.evaluate(data=data, report_latency=True)
 
-    for idx, (pred_mIoU, pred_FPS, mIoU, latency) in enumerate(zip(
-            [d['mIoU'] for d in data], [d['FPS'] for d in data], batch_mIoU, batch_latency)):
-        print("Subnet {}: predicted mIoU = {:.4f}, FPS = {:.0f}; evaluated mIoU = {:.4f}, FPS = {:.0f}".format(
-            idx, pred_mIoU, pred_FPS, mIoU, 1000 / latency))
+    for idx, (pred_mIoU, pred_FPS, mIoU, latency, batch_util, batch_consumption, batch_temperature) in enumerate(zip(
+            [d['mIoU'] for d in data], [d['FPS'] for d in data], batch_mIoU, batch_latency, batch_util, batch_consumption, batch_temperature)):
+        print("Subnet {}: predicted mIoU = {:.4f}, FPS = {:.0f}; evaluated mIoU = {:.4f}, FPS = {:.0f}, memory utilization = {}, energy consumption = {}, GPU temperature".format(idx, pred_mIoU, pred_FPS, mIoU, 1000 / latency, bytes2human(batch_util), batch_consumption, batch_temperature))
 
     # data = []
     # exp_root = "./SearchExps/" \
@@ -118,22 +118,44 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--search-space', type=str, default='basic', choices=['basic', 'bottleneck', 'inverted'],
+    # parser.add_argument('--search-space', type=str, default='basic', choices=['basic', 'bottleneck', 'inverted'],
+    #                     help='which search space to run search')
+    # parser.add_argument('--supernet-weights', type=str,
+    #                     default='pretrained/ofa_fanet/basic/ofa_basic_depth-expand-width@phase2/model_maxmIOU50.pth',
+    #                     help='path to the pretrained supernet weights')
+    # parser.add_argument('--meta-data', type=str, default='data/ofa_fanet_plus_basic_rtx_fps@0.5.json',
+    #                     help='path to the meta data file of latency, flops, and params')
+    # parser.add_argument('--dataset', type=str, default='cityscapes', choices=['cityscapes', 'camvid'],
+    #                     help='which dataset to perform search')
+    # parser.add_argument('--data-root', type=str, help='path to the dataset')
+
+    # parser.add_argument('--scale', type=float, default=0.5,
+    #                     help='resolution scale 0.5 -> 512x1024 for Cityscapes')
+    # parser.add_argument('--sec-obj', type=str, default='latency', choices=['latency', 'flops', 'params'],
+    #                     help='the additional objective to be optimized')
+    # parser.add_argument('--surrogate', type=str, default='lgb',
+    #                     choices=['lgb', 'mlp', 'e2epp', 'carts', 'gp', 'svr', 'ridge', 'knn', 'bayesian', 'ranknet'],
+    #                     help='which surrogate model to use')
+    # parser.add_argument('--save-path', type=str, default='.tmp',
+    #                     help='path to the folder for saving')
+    # parser.add_argument('--resume', type=str, default=None,
+    #                     help='path to a previous experiment folder to resume')
+    parser.add_argument('--search-space', type=str, default='bottleneck', choices=['basic', 'bottleneck', 'inverted'],
                         help='which search space to run search')
     parser.add_argument('--supernet-weights', type=str,
-                        default='pretrained/ofa_fanet/basic/ofa_basic_depth-expand-width@phase2/model_maxmIOU50.pth',
+                        default='/zhaoyifan/EVO/data/moseg/pretrained/ofa_fanet/cityscapes/bottleneck_plus/ofa_plus_bottleneck.pth',
                         help='path to the pretrained supernet weights')
-    parser.add_argument('--meta-data', type=str, default='data/ofa_fanet_plus_basic_rtx_fps@0.5.json',
+    parser.add_argument('--meta-data', type=str, default='/zhaoyifan/EVO/data/moseg/ofa_fanet_plus_bottleneck_rtx_fps@0.5.json',
                         help='path to the meta data file of latency, flops, and params')
     parser.add_argument('--dataset', type=str, default='cityscapes', choices=['cityscapes', 'camvid'],
                         help='which dataset to perform search')
-    parser.add_argument('--data-root', type=str, help='path to the dataset')
+    parser.add_argument('--data-root', type=str, default = '/zhaoyifan/EVO/seg_nas_codes/data/', help='path to the dataset')
 
     parser.add_argument('--scale', type=float, default=0.5,
                         help='resolution scale 0.5 -> 512x1024 for Cityscapes')
     parser.add_argument('--sec-obj', type=str, default='latency', choices=['latency', 'flops', 'params'],
                         help='the additional objective to be optimized')
-    parser.add_argument('--surrogate', type=str, default='lgb',
+    parser.add_argument('--surrogate', type=str, default='ranknet',
                         choices=['lgb', 'mlp', 'e2epp', 'carts', 'gp', 'svr', 'ridge', 'knn', 'bayesian', 'ranknet'],
                         help='which surrogate model to use')
     parser.add_argument('--save-path', type=str, default='.tmp',

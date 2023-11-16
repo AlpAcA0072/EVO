@@ -48,6 +48,7 @@ class RandomCrop(object):
 class CityScapes(Dataset):
     def __init__(self, rootpth, cropsize=(640, 480), mode='train', randomscale=(
             0.125, 0.25, 0.375, 0.5, 0.675, 0.75, 0.875, 1.0, 1.25, 1.5), *args, **kwargs):
+        # super(CityScapes, self).__init__()
         super(CityScapes, self).__init__(*args, **kwargs)
         assert mode in ('train', 'val', 'test', 'trainval')
         self.mode = mode
@@ -73,7 +74,7 @@ class CityScapes(Dataset):
         gtnames = []
         gtpth = osp.join(rootpth, 'gtFine', mode)
         lbnames = os.listdir(gtpth)
-        # lbnames = [el for el in lbnames if 'labelIds' in el]
+        lbnames = [el for el in lbnames if 'labelIds' in el]
         names = [el.replace('_gtFine_labelIds.png', '') for el in lbnames]
         lbpths = [osp.join(gtpth, el) for el in lbnames]
         gtnames.extend(names)
@@ -124,7 +125,7 @@ class CityScapes(Dataset):
 
 if __name__ == "__main__":
     from tqdm import tqdm
-    ds = CityScapes('./data/', n_classes=19, mode='val')
+    ds = CityScapes('/zhaoyifan/EVO/seg_nas_codes/data/', n_classes=19, mode='val')
     uni = []
     for im, lb in tqdm(ds):
         lb_uni = np.unique(lb).tolist()

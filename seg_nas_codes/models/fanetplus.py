@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(0, './')
+sys.path.append('/zhaoyifan/EVO/seg_nas_codes')
 
 import torch
 import torch.nn as nn
@@ -503,3 +504,5 @@ if __name__ == '__main__':
     fanetplus.eval()
     out = fanetplus(data)
     print(out[0].size())
+
+    

@@ -15,6 +15,9 @@ from models.fanet import FANet
 from train.utils import setup_logger
 from data_providers.cityscapes import CityScapes
 
+import pynvml, psutil
+from psutil._common import bytes2human
+import time
 
 class MscEval(object):
     def __init__(self, size_hw, ignore_label=255):
@@ -24,12 +27,24 @@ class MscEval(object):
         self.size_hw = size_hw
 
     def __call__(self, net, dl, n_classes):
+        pynvml.nvmlInit()  
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        name = pynvml.nvmlDeviceGetName(handle).decode()
+        meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
+
+        GPU_util = []
+        GPU_power = []
+        GPU_temp = []
+
         # evaluate
         hist = torch.zeros(n_classes, n_classes).cuda().detach()
         if dist.is_initialized() and dist.get_rank() != 0:
             diter = enumerate(dl)
         else:
             diter = enumerate(tqdm(dl))
+        
+        start_time = time.time()
+
         for i, (imgs, label) in diter:
             # N, _, H, W = label.shape
             label = label.squeeze(1).cuda()
@@ -44,11 +59,31 @@ class MscEval(object):
             keep = label != self.ignore_label
             hist += torch.bincount(label[keep] * n_classes + preds[keep], minlength=n_classes ** 2).view(
                 n_classes, n_classes).float()
+
+            utilization = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            GPU_util.append(utilization.used)
+
+            powerusage = pynvml.nvmlDeviceGetPowerUsage(handle)
+            # 单位瓦，原始单位毫瓦
+            GPU_power.append(powerusage/1000)
+
+            temp = pynvml.nvmlDeviceGetTemperature(handle, 0)
+            GPU_temp.append(temp)
+        
+        end_time = time.time()
+
+        GPU_util = sum(GPU_util) / len(GPU_util)
+        GPU_power = sum(GPU_power) / len(GPU_power)
+        GPU_temp = sum(GPU_temp) / len(GPU_temp)
+
+        energy_consumption = GPU_power * (end_time - start_time)
+
         if dist.is_initialized():
             dist.all_reduce(hist, dist.ReduceOp.SUM)
         ious = hist.diag() / (hist.sum(dim=0) + hist.sum(dim=1) - hist.diag())
         miou = ious.mean()
-        return miou.item()
+
+        return miou.item(), GPU_util, energy_consumption, GPU_temp, (end_time - start_time)
 
 
 def evaluate(pretrained='./pretrained', dspth='./data', scale=0.75):

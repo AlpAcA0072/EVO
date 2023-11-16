@@ -20,6 +20,9 @@ from train.train_ofafanet_basic import SUB_SEED, set_running_statistics
 from ofa.utils import get_net_device
 from torchprofile import profile_macs
 
+import pynvml, psutil
+from psutil._common import bytes2human
+import time, json
 
 class OFAFANetEvaluator(ABC):
     def __init__(self,
@@ -58,6 +61,14 @@ class OFAFANetEvaluator(ABC):
         model = subnet.cuda()
         input = torch.randn(*input_size).cuda()
 
+        GPU_util = []
+        GPU_power = []
+        GPU_temp = []
+
+        pynvml.nvmlInit()  
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+
+
         with torch.no_grad():
             for _ in range(10):
                 model(input)
@@ -84,13 +95,30 @@ class OFAFANetEvaluator(ABC):
             t_start = time.time()
             for _ in tqdm(range(iterations)):
                 model(input)
-            torch.cuda.synchronize()
-            torch.cuda.synchronize()
             elapsed_time = time.time() - t_start
+                                
+            utilization = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            GPU_util.append(utilization.used)
+
+            powerusage = pynvml.nvmlDeviceGetPowerUsage(handle)
+            # 单位瓦，原始单位毫瓦
+            GPU_power.append(powerusage/1000)
+
+            temp = pynvml.nvmlDeviceGetTemperature(handle, 0)
+            GPU_temp.append(temp)
+
+            GPU_util = sum(GPU_util) / len(GPU_util)
+            GPU_power = sum(GPU_power) / len(GPU_power)
+            GPU_temp = sum(GPU_temp) / len(GPU_temp)
+
+            torch.cuda.synchronize()
+            torch.cuda.synchronize()
+
+            consumption = GPU_power * elapsed_time
             latency = elapsed_time / iterations * 1000
         torch.cuda.empty_cache()
         # FPS = 1000 / latency (in ms)
-        return latency
+        return latency, GPU_util, consumption, GPU_temp, elapsed_time
 
     def _measure_latency(self, subnet):
         return self.measure_latency(subnet, self.input_size)
@@ -105,19 +133,32 @@ class OFAFANetEvaluator(ABC):
         # measure mIoU
         with torch.no_grad():
             single_scale = MscEval(input_size[-2:])
-            mIoU = single_scale(subnet, dl, num_classes)
+            # 进度条
+            mIoU, GPU_util, energy_consumption, GPU_temp, time = single_scale(subnet, dl, num_classes)
 
-        return mIoU
+        return mIoU, GPU_util, energy_consumption, GPU_temp, time
 
-    def evaluate(self, subnets, report_latency=False):
+    def evaluate(self, data, report_latency=True):
         """ high-fidelity evaluation by inference on validation data """
-
         # create dummy data for measuring flops
         dummy_data = torch.rand(*self.input_size)
         # print(dummy_data.shape)
 
+        pynvml.nvmlInit()  
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        name = pynvml.nvmlDeviceGetName(handle).decode()
+
+        partial_name = name.split()[-1]
+        
+        file = open(os.path.join('/zhaoyifan/EVO/sampled_result', 'ofa_fanet_plus_bottleneck_rtx_fps@0.5_4090.json'), 'w+')
+        monitor = open(os.path.join('/zhaoyifan/EVO/sampled_result', 'monitor.log'), 'w+')
+        monitor.write("intial latency, latency, memory utilization, energy consumption, GPU temperature\n")
+        file.write("[\n")
+
         batch_mIoU, batch_params, batch_flops, batch_latency = [], [], [], []
-        for i, subnet_str in enumerate(subnets):
+        batch_util, batch_consumption, batch_temperature = [], [], []
+        for i, subnet_all in enumerate(data):
+            subnet_str = subnet_all['config']
             print("evaluating subnet {}:".format(i))
             print(subnet_str)
 
@@ -129,26 +170,54 @@ class OFAFANetEvaluator(ABC):
             
             # compute mean IoU
             mIoU = 0.0
-            # mIoU = self.eval_mIoU(subnet, self.input_size[-2:], self.dl, self.sdl, self.num_classes)
+            # util = 0.0
+            # consumption = 0.0
+            # temperature = 0.0
+            mIoU, util, consumption, temperature, time = self.eval_mIoU(subnet, self.input_size[-2:], self.dl, self.sdl, self.num_classes)
             # calculate #params and #flops
-            params = self._calc_params(subnet)
-            # TODO: flops打表
-            flops = self._calc_flops(subnet, dummy_data)
+            # params = self._calc_params(subnet)
+            # flops = self._calc_flops(subnet, dummy_data)
 
             batch_mIoU.append(mIoU)
-            batch_params.append(params)
-            batch_flops.append(flops)
+            # batch_params.append(params)
+            # batch_flops.append(flops)
+
+            # GPU_mem = bytes2human(meminfo.used)
 
             if report_latency:
                 latency = 1.0
-                # latency = self._measure_latency(subnet)
+                latency, la_util, la_consumption, la_temperature, elapsed_time = self._measure_latency(subnet)
                 batch_latency.append(latency)
-                print("mIoU = {:.4f}, Params = {:.2f}M , FLOPs = {:.2f}G, FPS = {:d}".format(
-                    mIoU, params, flops, int(1000 / latency)))
+                util = (util * time + la_util * elapsed_time) / (time + elapsed_time)
+                consumption = consumption + la_consumption
+                temperature = (temperature * time + la_temperature * elapsed_time) / (time + elapsed_time)
+
+                # print("mIoU = {:.4f}, Params = {:.2f}M , FLOPs = {:.2f}G, FPS = {:d}".format(
+                #     mIoU, params, flops, int(1000 / latency)))
             else:
                 print("mIoU = {:.4f}, Params = {:.2f}M, FLOPs = {:.2f}".format(mIoU, params, flops))
 
-        return batch_mIoU, batch_params, batch_flops, batch_latency
+            batch_util.append(util)
+            batch_consumption.append(consumption)
+            batch_temperature.append(temperature)
+
+            subnet_all[partial_name + '_latency'] = latency
+            subnet_all['GPU_memory_utilization'] = util
+            subnet_all['energy_consumption'] = consumption
+            subnet_all['GPU_temperature'] = temperature
+
+            json.dump(subnet_all, file, indent=4)
+            file.write(",\n")
+            file.flush()
+
+            monitor.write(str(subnet_all['latency'])+ " " + str(latency) + " " + str(util) + " " + str(consumption) + " " + str(temperature) + "\n")
+            monitor.flush()
+
+        file.write("\n]")
+        file.close()
+
+        monitor.close()
+        return batch_mIoU, batch_params, batch_flops, batch_latency, batch_util, batch_consumption, batch_temperature
 
 
 class CityscapesEvaluator(OFAFANetEvaluator):
