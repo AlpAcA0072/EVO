@@ -81,7 +81,7 @@ def main(args):
     data = [data[i] for i in idx[::-1]]
 
     # subnets = [d['config'] for d in data]
-    batch_mIoU, _, _, batch_latency, batch_util, batch_consumption, batch_temperature = evaluator.evaluate(data=data, report_latency=True)
+    batch_mIoU, _, _, batch_latency, batch_util, batch_consumption, batch_temperature = evaluator.evaluate(data=data, evaluate_result=args.evaluate_result, monitor_file=args.monitor_file, report_latency=True)
 
     for idx, (pred_mIoU, pred_FPS, mIoU, latency, batch_util, batch_consumption, batch_temperature) in enumerate(zip(
             [d['mIoU'] for d in data], [d['FPS'] for d in data], batch_mIoU, batch_latency, batch_util, batch_consumption, batch_temperature)):
@@ -163,5 +163,7 @@ if __name__ == '__main__':
                         help='path to the folder for saving')
     parser.add_argument('--resume', type=str, default=None,
                         help='path to a previous experiment folder to resume')
+    parser.add_argument('--evaluate_result', type=str, default = '/zhaoyifan/EVO/sampled_result/cityscapes/3090/ofa_fanet_plus_bottleneck_rtx_fps@0.5_3090.json')
+    parser.add_argument('--monitor_file', type=str, default = '/zhaoyifan/EVO/sampled_result/cityscapes/3090/monitor.log')
     cfgs = parser.parse_args()
     main(cfgs)

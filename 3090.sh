@@ -1,1 +1,1 @@
-nohup /opt/conda/envs/cv_torch/bin/python /zhaoyifan/EVO/seg_nas_codes_3090/evaluate_supernet.py > /zhaoyifan/EVO/sampled_result/3090/command_output.log 2>&1 &
+nohup /opt/conda/envs/cv_torch/bin/python /zhaoyifan/EVO/seg_nas_codes_3090/evaluate_supernet.py > /zhaoyifan/EVO/sampled_result/cityscapes/3090/command_output.log 2>&1 &

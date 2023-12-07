@@ -138,7 +138,7 @@ class OFAFANetEvaluator(ABC):
 
         return mIoU, GPU_util, energy_consumption, GPU_temp, time
 
-    def evaluate(self, data, report_latency=True):
+    def evaluate(self, data, evaluate_result, monitor_file, report_latency=True):
         """ high-fidelity evaluation by inference on validation data """
         # create dummy data for measuring flops
         dummy_data = torch.rand(*self.input_size)
@@ -150,8 +150,8 @@ class OFAFANetEvaluator(ABC):
 
         partial_name = name.split()[-1]
         
-        file = open(os.path.join('/zhaoyifan/EVO/sampled_result/3090', 'ofa_fanet_plus_bottleneck_rtx_fps@0.5_3090.json'), 'w+')
-        monitor = open(os.path.join('/zhaoyifan/EVO/sampled_result/3090', 'monitor.log'), 'w+')
+        file = open(evaluate_result, 'w+')
+        monitor = open(monitor_file, 'w+')
         monitor.write("Total number of subnets: {}\n".format(len(data)))
         monitor.write("index, intial latency, latency, memory utilization, energy consumption, GPU temperature, time\n")
         monitor.flush()
