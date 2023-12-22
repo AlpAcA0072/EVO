@@ -163,7 +163,7 @@ if __name__ == '__main__':
                         help='path to the folder for saving')
     parser.add_argument('--resume', type=str, default=None,
                         help='path to a previous experiment folder to resume')
-    parser.add_argument('--evaluate_result', type=str, default = '/zhaoyifan/EVO/sampled_result/cityscapes/3090/ofa_fanet_plus_bottleneck_rtx_fps@0.5_3090.json')
-    parser.add_argument('--monitor_file', type=str, default = '/zhaoyifan/EVO/sampled_result/cityscapes/3090/monitor.log')
+    parser.add_argument('--evaluate_result', type=str, default = '/zhaoyifan/EVO/sampled_result/cityscapes/atlas/ofa_fanet_plus_bottleneck_rtx_fps@0.5_atlas.json')
+    parser.add_argument('--monitor_file', type=str, default = '/zhaoyifan/EVO/sampled_result/cityscapes/atlas/monitor.log')
     cfgs = parser.parse_args()
     main(cfgs)

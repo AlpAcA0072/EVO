@@ -1,46 +1,26 @@
-# DCN v2 - PyTorch v1.11+ and v2+
+# DCNv2 latest
 
-* Deformable Convolutional Networks V2 [[Original Repo]](https://github.com/CharlesShang/DCNv2)
-* This repo is customized for Microsoft Windows 10/11
-* Changes were made based on [65472](https://github.com/pytorch/pytorch/pull/65472), [65492](https://github.com/pytorch/pytorch/pull/65492), [66391](https://github.com/pytorch/pytorch/pull/66391), and [69041](https://github.com/pytorch/pytorch/pull/69041)
-* ⚠️ ***Checkout [`torch-legacy`](https://github.com/rathaROG/DCNv2_Windows/tree/torch-legacy) for PyTorch 1.10.x and older***
+- Add support for pytorch1.11 (may be not backward-compatible). 
+- Test on ubuntu20.04, python3.8(conda), cuda_11.4
 
-## Clone & Build
+It was confirmed that pytorch1.11 worked, but not compatible with previous pytorch version. If you want pytorch1.10 or earlier, please using pytorch1.6 branch, or using last git commit.
 
-* Clone as `DCNv2`: 
-    ```
-    git clone --single-branch --branch "torch-1.11+" https://github.com/rathaROG/DCNv2_Windows.git DCNv2
-    ```
+It's suggested using latest stable pytorch 1.11 to start your project.
 
-* Build DCNv2 `_ext` with the smart `make_develop.bat`:
-    ```
-    cd DCNv2
-    make_develop.bat
-    ```
-    <details><summary><ins>Click here to see an example!</ins></summary>
 
-    <img src="https://raw.githubusercontent.com/rathaROG/screenshot/master/DCNv2_Windows/new_finish.png"/>
-    <img src="https://raw.githubusercontent.com/rathaROG/screenshot/master/DCNv2_Windows/new_start.png"/>
+## Install
 
-    </details>
+```bash
+$ python3 setup.py build develop
+```
 
-* Or use the old `make_old.bat` under [developer command prompt](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160#developer_command_prompt_shortcuts)...
+## Updates
 
-    <details><summary><ins>Click here to expand!</ins></summary>
+- **2021.03.24**: It was confirmed PyTorch 1.8 is OK with master branch, feel free to use it.
+- **2021.02.18**: Happy new year! PyTorch 1.7 finally supported on master branch! **for lower version theoretically also works, if not, pls fire an issue to me!**.
+- **2020.09.23**: Now master branch works for pytorch 1.6 by default, for older version you gonna need separated one.
+- **2020.08.25**: Check out pytorch1.6 branch for pytorch 1.6 support, you will meet an error like `THCudaBlas_Sgemv undefined` if you using pytorch 1.6 build master branch. master branch now work for pytorch 1.5;
 
-    If you don't want to use [developer command prompt](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160#developer_command_prompt_shortcuts), simply set `cl.exe` path in your system path variable; for example, MS VS2019 Enterprise:
-    ```
-    C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.xx.xxxxx\bin\Hostx64\x64\
-    ```
-    Build DCNv2 `_ext`:
-    ```
-    cd DCNv2
-    make_old.bat
-    ```
-    </details>
+## Contact
 
-## Credit to [origin repo](https://github.com/CharlesShang/DCNv2) & special thanks to:
-
-- https://github.com/tteepe/DCNv2
-- @[daiKratos](https://github.com/daiKratos)
-- @[haruishi43](https://github.com/haruishi43)
+If you have any question, please using this platform post questions: http://t.manaai.cn

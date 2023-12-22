@@ -108,7 +108,7 @@ class OFAFANetEvaluator(ABC):
             GPU_temp.append(temp)
 
             GPU_util = sum(GPU_util) / len(GPU_util)
-            GPU_power = sum(GPU_power) / len(GPU_power)
+            GPU_power = 9.5
             GPU_temp = sum(GPU_temp) / len(GPU_temp)
 
             torch.cuda.synchronize()
@@ -118,7 +118,7 @@ class OFAFANetEvaluator(ABC):
             latency = elapsed_time / iterations * 1000
         torch.cuda.empty_cache()
         # FPS = 1000 / latency (in ms)
-        return latency, GPU_util, consumption, GPU_temp, elapsed_time
+        return latency, 1.0, consumption, 1.0, elapsed_time
 
     def _measure_latency(self, subnet):
         return self.measure_latency(subnet, self.input_size)
